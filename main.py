@@ -12,7 +12,9 @@ app = FastAPI()
 app.mount("/assets", StaticFiles(directory="assets"), name="assets")
 
 origins = [
+    "http://localhost:64383",
     "http://localhost:5173",
+    "http://localhost",
 ]
 
 app.add_middleware(
@@ -30,6 +32,10 @@ templates = Jinja2Templates(directory="templates")
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
+@app.post("/api/folder-select/get-folders")
+async def Folder_Select_Get_Folders(request: Request):
+    return await Folder_Select.Get_Folders(request)
+
 @app.post("/api/folder-select/create")
 async def Folder_Select_Create(request: Request):
-    return await Folder_Select.Folder_Select_Create(request)
+    return await Folder_Select.Create(request)
