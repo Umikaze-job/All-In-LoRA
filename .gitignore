@@ -1,0 +1,5 @@
+.vscode/
+venv/
+models/sd_models/**
+models/tagger_models/**
+savefiles/**
