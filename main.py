@@ -59,3 +59,7 @@ async def Folder_Select_Rename(request: Request):
 @app.post("/api/folder-select/thumbnail")
 async def Folder_Select_Thumbnail(folderName: str = Form(), image: UploadFile = Form()):
     return await Folder_Select.Thumbnail(folderName,image)
+
+@app.post("/api/folder-select/delete")
+async def Folder_Select_Delete(request: Request):
+    return await Folder_Select.Delete(request)

@@ -1,5 +1,7 @@
 .vscode/
 venv/
 models/sd_models/**
+!models/sd_models/*.txt
 models/tagger_models/**
+!models/tagger_models/*.txt
 savefiles/**
