@@ -6,3 +6,4 @@ models/tagger_models/**
 !models/tagger_models/*.txt
 savefiles/**
 !savefiles/savefile.txt
+__pycache__
