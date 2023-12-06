@@ -1,6 +1,7 @@
 .vscode/
 venv/
-*.pyc
+**/__pycache__
+**/__pycache__/*.pyc
 models/sd_models/**
 !models/sd_models/*.txt
 models/tagger_models/**
