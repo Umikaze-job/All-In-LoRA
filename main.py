@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
 from modules.folder_select import Folder_Select
+from modules.processing_images import Processing_Images
 
 app = FastAPI()
 
@@ -63,3 +64,16 @@ async def Folder_Select_Thumbnail(folderName: str = Form(), image: UploadFile = 
 @app.post("/api/folder-select/delete")
 async def Folder_Select_Delete(request: Request):
     return await Folder_Select.Delete(request)
+
+@app.post("/api/processing-images/input-images")
+async def Processing_Images_Input_Images(request:Request):
+    return await Processing_Images.Input_Images(request)
+
+@app.post("/api/processing-images/set-input-images")
+async def Processing_Images_Set_Input_Images(file: UploadFile = File(...),folderName:str = Form(...)):
+    print(f"folder_name:{folderName}")
+    return await Processing_Images.Set_Input_Images(file,folderName)
+
+@app.post("/api/processing-images/delete-input-images")
+async def Processing_Images_Delete_Input_Images(request:Request):
+    return await Processing_Images.Delete_Input_Images(request)

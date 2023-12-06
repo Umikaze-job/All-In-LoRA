@@ -1,22 +1,13 @@
-from fastapi import FastAPI, Request, File, UploadFile, Form
+from fastapi import Request, UploadFile, Form
 from fastapi.responses import JSONResponse
-import asyncio
 import os
 import shutil
 import re
 import json
 from datetime import datetime
+from .folder_path import get_localhost_name, get_root_folder_path,get_savefiles
 
 from pydantic import BaseModel
-
-def get_root_folder_path():
-    # 現在のファイル（このスクリプト）のディレクトリを取得
-    current_script_directory = os.path.dirname(os.path.abspath(__file__))
-
-    # ルートフォルダのパスを取得
-    root_folder_path = os.path.abspath(os.path.join(current_script_directory, ".."))
-
-    return root_folder_path
 
 def get_thumbnail_name():
         # 現在の日時を取得
@@ -145,10 +136,10 @@ def get_folder_paths_from_savefiles(filenames:[]):
     # 各要素に対して os.path.join(get_root_folder_path(), 要素) を適用する
     thumbnail_paths = []
     for name in filenames:
-        thumbnail_path = get_thumbnail_path(os.path.join(get_root_folder_path(),"savefiles", name))
+        thumbnail_path = get_thumbnail_path(os.path.join(get_savefiles(), name))
         thumbnail_name = os.path.basename(thumbnail_path)
 
-        thumbnail_paths.append(os.path.join(f"http://localhost:8000","savefiles", name,thumbnail_name))
+        thumbnail_paths.append(os.path.join(get_localhost_name(),"savefiles", name,thumbnail_name))
     
     return thumbnail_paths
 
@@ -165,8 +156,8 @@ class Folder_Select:
     async def Create(request:Request):
         data = await request.json()
         folder_name = data.get('name')
-        folder_path = os.path.join(get_root_folder_path(),"savefiles",folder_name)
-        if is_folder_exists(os.path.join(get_root_folder_path(),"savefiles"),folder_name):
+        folder_path = os.path.join(get_savefiles(),folder_name)
+        if is_folder_exists(get_savefiles(),folder_name):
             return {"message":"Duplicate names"}
         else:
             try:
@@ -179,7 +170,7 @@ class Folder_Select:
                 return {"message": "Error"}
     
     async def Get_Folders(request:Request):
-        dir_path = os.path.join(get_root_folder_path(),"savefiles")
+        dir_path = get_savefiles()
         directories = [f for f in os.listdir(dir_path) if os.path.isdir(os.path.join(dir_path, f))]
 
         # 更新日時でソート
@@ -191,13 +182,13 @@ class Folder_Select:
         data = await request.json()
         before_name = data.get('beforeName')
         after_name = data.get('afterName')
-        if is_folder_exists(os.path.join(get_root_folder_path(),"savefiles"), after_name):
+        if is_folder_exists(get_savefiles(), after_name):
             return {"error":"Duplicate names"}
         else:
             try:
-                old_path = os.path.join(get_root_folder_path(),"savefiles",before_name)
+                old_path = os.path.join(get_savefiles(),before_name)
                 # 新しい名前のパスを生成
-                new_path = os.path.join(get_root_folder_path(),"savefiles",after_name)
+                new_path = os.path.join(get_savefiles(),after_name)
                 
                 # フォルダの名前を変更
                 os.rename(old_path, new_path)
@@ -213,8 +204,8 @@ class Folder_Select:
             print(folderName)
             print(image)
             # ファイルを指定したフォルダに保存
-            save_path = os.path.join(get_root_folder_path(),"savefiles",folderName, get_thumbnail_name())
-            delete_thumbnails(os.path.join(get_root_folder_path(),"savefiles",folderName))
+            save_path = os.path.join(get_savefiles(),folderName, get_thumbnail_name())
+            delete_thumbnails(os.path.join(get_savefiles(),folderName))
             with open(save_path, "wb") as buffer:
                 shutil.copyfileobj(image.file, buffer)
             return {"message":"Thumbnails have been set up!!!!"}
@@ -225,7 +216,7 @@ class Folder_Select:
         try:
             data = await request.json()
             folder_name = data.get('folderName')
-            shutil.rmtree(os.path.join(get_root_folder_path(),"savefiles",folder_name))
+            shutil.rmtree(os.path.join(get_savefiles(),folder_name))
             return {"message": "Folder Deleted!!!"}
         except FileNotFoundError:
             return {"error":"not found"}
