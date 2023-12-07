@@ -77,3 +77,7 @@ async def Processing_Images_Set_Input_Images(file: UploadFile = File(...),folder
 @app.post("/api/processing-images/delete-input-images")
 async def Processing_Images_Delete_Input_Images(request:Request):
     return await Processing_Images.Delete_Input_Images(request)
+
+@app.post("/api/processing-images/output-input-images")
+async def Processing_Images_Delete_Input_Images(request:Request):
+    return await Processing_Images.Delete_Input_Images(request)

@@ -33,6 +33,7 @@ class Processing_Images:
             shutil.copyfileobj(file.file, buffer)
         return {"message": "OK"}
     
+    # 画像を削除する
     async def Delete_Input_Images(request:Request):
         try:
             data = await request.json()
@@ -41,5 +42,20 @@ class Processing_Images:
             print(f"folder_name:{folderName}")
             delete_image(os.path.join(get_savefiles(),folderName,"images_folder",filename))
             return {"message":f"File Deleted"}
+        except Exception as e:
+            return {"error":"some error"}
+        
+    # 画像を加工した後の移動先のフォルダの画像の取得
+    async def Output_Input_Images(request:Request):
+        try:
+            data = await request.json()
+            folder_name = data.get('folderName')
+            image_list = get_images_list(os.path.join(get_savefiles(),folder_name,"character_trimming_folder"))# 画像のパスの一覧
+
+            image_paths = [] #fastapi経由で取得するためのパスの一覧
+            for image in image_list:
+                image_paths.append(os.path.join(get_localhost_name(),"savefiles",folder_name,"character_trimming_folder",image))
+
+            return {"data_paths": image_paths}
         except Exception as e:
             return {"error":"some error"}
