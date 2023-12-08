@@ -9,6 +9,7 @@ from fastapi.responses import FileResponse
 
 from modules.folder_select import Folder_Select
 from modules.processing_images import Processing_Images
+from modules.Make_TextFile import Make_TextFile
 
 app = FastAPI()
 
@@ -24,9 +25,7 @@ app.mount("/assets", app=StaticFiles(directory="assets"), name="assets")
 app.mount("/savefiles", app=MyStatics(directory="savefiles"), name="savefiles")
 
 origins = [
-    "http://localhost:64383",
-    "http://localhost:5173",
-    "http://localhost",
+    "*",
 ]
 
 app.add_middleware(
@@ -81,3 +80,7 @@ async def Processing_Images_Delete_Input_Images(request:Request):
 @app.post("/api/processing-images/output-input-images")
 async def Processing_Images_Output_Input_Images(request:Request):
     return await Processing_Images.Output_Input_Images(request)
+
+@app.post("/api/make-textfile/tagging")
+async def Make_TextFile_Tagging(request:Request):
+    return await Make_TextFile.Tagging(request)

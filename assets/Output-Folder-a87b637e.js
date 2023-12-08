@@ -1,1 +1,0 @@
-import{I as t}from"./Dropable_Image01-78b7b3dd.js";import{d as e,_ as o,o as s,g as n,b as a}from"./index-8f2ce7ae.js";const c=e({setup(){},components:{Img_Comp01:t}}),r={class:"grid grid-cols-6 gap-4 m-3 text-white font-Raleway"},p=a("p",null,"Output Folder",-1),_=[p];function d(i,l,m,u,f,g){return s(),n("div",r,_)}const $=o(c,[["render",d]]);export{$ as default};
