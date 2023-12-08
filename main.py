@@ -79,5 +79,5 @@ async def Processing_Images_Delete_Input_Images(request:Request):
     return await Processing_Images.Delete_Input_Images(request)
 
 @app.post("/api/processing-images/output-input-images")
-async def Processing_Images_Delete_Input_Images(request:Request):
-    return await Processing_Images.Delete_Input_Images(request)
+async def Processing_Images_Output_Input_Images(request:Request):
+    return await Processing_Images.Output_Input_Images(request)
