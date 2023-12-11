@@ -14,6 +14,7 @@ class Make_TextFile:
             json_data = get_setting_file_json(folder_name)
             if "taggingData" not in json_data:
                 json_data["taggingData"] = {"base":[],"after":[]}
+                write_setting_file_json(folder_name,json_data)
 
             # item--画像のurlパス ここでtaggingする
             for item in tagging_data['base']:
@@ -77,8 +78,11 @@ class Make_TextFile:
 
             json_data = get_setting_file_json(folder_name)
 
+            if "taggingData" not in json_data:
+                json_data["taggingData"] = {"base":[],"after":[]}
+                write_setting_file_json(folder_name,json_data)
+
             return {"tagdata":json_data["taggingData"]}
-            pass
         except Exception as e:
             return {"error": "some error"}
         

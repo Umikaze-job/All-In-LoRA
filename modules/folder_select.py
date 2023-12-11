@@ -29,7 +29,8 @@ def create_setting_file(folder_path):
     settings_data = {
         "date":{
             "Folder creation date": formatted_date
-        }
+        },
+        "taggingData":{"base":[],"after":[]}
     }
 
     # setting.jsonのパスを作成
