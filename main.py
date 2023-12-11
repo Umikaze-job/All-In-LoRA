@@ -81,6 +81,14 @@ async def Processing_Images_Delete_Input_Images(request:Request):
 async def Processing_Images_Output_Input_Images(request:Request):
     return await Processing_Images.Output_Input_Images(request)
 
-@app.post("/api/make-textfile/tagging")
+@app.post("/api/make-textfile/tagging/write")
 async def Make_TextFile_Tagging(request:Request):
     return await Make_TextFile.Tagging(request)
+
+@app.post("/api/make-textfile/tagging/getdata")
+async def Make_TextFile_Tagging_GetData(request:Request):
+    return await Make_TextFile.Tagging_GetData(request)
+
+@app.post("/api/make-textfile/edit_tag/getdata")
+async def Make_TextFile_EditTag_GetData(request:Request):
+    return await Make_TextFile.EditTag_GetData(request)

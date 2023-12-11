@@ -1,6 +1,7 @@
 from .folder_path import get_root_folder_path
 import os
 import json
+import glob
 
 # setting.jsonを読み込み
 def get_setting_file_json(folder_name:str):
@@ -14,15 +15,29 @@ def write_setting_file_json(folder_name:str,json_data:any):
     with open(file_path,"w") as f:
         f.write(json.dumps(json_data))
 
-# 任意のフォルダの画像ファイルのリスト
-def get_image_files(folder_path):
-    # フォルダ内の全てのファイルを取得
-    all_files = os.listdir(folder_path)
+# 画像フォルダのパスリストを取得
+def get_savefile_image_paths(folder_name, image_extensions=['jpg', 'jpeg', 'png', 'gif']):
+    """
+    指定されたフォルダ内の画像ファイルのパスのリストを取得する関数
 
-    # 画像ファイルの拡張子
-    image_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp']
+    Parameters:
+    - folder_path: 画像ファイルを検索するフォルダのパス
+    - image_extensions: 検索する画像ファイルの拡張子のリスト
 
-    # 画像ファイルのリストを取得
-    image_files = [file for file in all_files if os.path.splitext(file)[1].lower() in image_extensions]
+    Returns:
+    - 画像ファイルのパスのリスト
+    """
+    base_paths = []
+    after_paths = []
+    
+    # images_folderフォルダ内のファイルを検索
+    for extension in image_extensions:
+        pattern = os.path.join(get_root_folder_path(),"savefiles",folder_name,"images_folder", f'*.{extension}')
+        base_paths.extend(glob.glob(pattern))
 
-    return image_files
+    # character_trimming_folder内のファイルを検索
+    for extension in image_extensions:
+        pattern = os.path.join(get_root_folder_path(),"savefiles",folder_name,"character_trimming_folder", f'*.{extension}')
+        after_paths.extend(glob.glob(pattern))
+    
+    return base_paths, after_paths
