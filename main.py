@@ -64,6 +64,7 @@ async def Folder_Select_Thumbnail(folderName: str = Form(), image: UploadFile = 
 async def Folder_Select_Delete(request: Request):
     return await Folder_Select.Delete(request)
 
+# processing-images
 @app.post("/api/processing-images/input-images")
 async def Processing_Images_Input_Images(request:Request):
     return await Processing_Images.Input_Images(request)
@@ -81,6 +82,7 @@ async def Processing_Images_Delete_Input_Images(request:Request):
 async def Processing_Images_Output_Input_Images(request:Request):
     return await Processing_Images.Output_Input_Images(request)
 
+# tagging
 @app.post("/api/make-textfile/tagging/write")
 async def Make_TextFile_Tagging(request:Request):
     return await Make_TextFile.Tagging(request)
@@ -92,3 +94,11 @@ async def Make_TextFile_Tagging_GetData(request:Request):
 @app.post("/api/make-textfile/edit_tag/getdata")
 async def Make_TextFile_EditTag_GetData(request:Request):
     return await Make_TextFile.EditTag_GetData(request)
+
+@app.post("/api/make-textfile/edit_tag/write")
+async def Make_TextFile_EditTag_Write(request:Request):
+    return await Make_TextFile.EditTag_Write(request)
+
+@app.post("/api/make-textfile/captioning/start")
+async def Make_TextFile_Captioning_Start(request:Request):
+    return await Make_TextFile.Captioning_Start(request)
