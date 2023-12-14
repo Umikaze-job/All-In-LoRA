@@ -91,6 +91,10 @@ async def Make_TextFile_Tagging(request:Request):
 async def Make_TextFile_Tagging_GetData(request:Request):
     return await Make_TextFile.Tagging_GetData(request)
 
+@app.post("/api/make-textfile/tagging/alreadytag")
+async def Make_TextFile_Tagging_Already_Tag(request:Request):
+    return await Make_TextFile.Already_Tag(request)
+
 @app.post("/api/make-textfile/edit_tag/getdata")
 async def Make_TextFile_EditTag_GetData(request:Request):
     return await Make_TextFile.EditTag_GetData(request)
@@ -102,3 +106,15 @@ async def Make_TextFile_EditTag_Write(request:Request):
 @app.post("/api/make-textfile/captioning/start")
 async def Make_TextFile_Captioning_Start(request:Request):
     return await Make_TextFile.Captioning_Start(request)
+
+@app.post("/api/make-textfile/captioning/write")
+async def Make_TextFile_Captioning_Write(request:Request):
+    return await Make_TextFile.Captioning_Write(request)
+
+@app.post("/api/make-textfile/captioning/captiontag")
+async def Make_TextFile_Caption_Tag(request:Request):
+    return await Make_TextFile.Caption_Tag(request)
+
+@app.post("/api/make-textfile/captioning/start-caption")
+async def Make_TextFile_Start_Caption(request:Request):
+    return await Make_TextFile.Start_Caption(request)

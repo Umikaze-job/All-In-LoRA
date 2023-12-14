@@ -5,7 +5,7 @@ import glob
 import random
 
 # setting.jsonを読み込み
-def get_setting_file_json(folder_name:str):
+def get_setting_file_json(folder_name:str) -> {"date":{},"taggingData":{"base":[],"after":[]}}:
     file_path = os.path.join(get_root_folder_path(),"savefiles",folder_name,"setting.json")
     with open(file_path,"r") as f:
         return json.load(f)
@@ -44,7 +44,7 @@ def get_savefile_image_paths(folder_name, image_extensions=['jpg', 'jpeg', 'png'
     return base_paths, after_paths
 
 # 画像フォルダのurlパスリストを取得
-def get_savefile_image_url_paths(folder_name, image_extensions=['jpg', 'jpeg', 'png', 'gif']):
+def get_savefile_image_url_paths(folder_name:str, image_extensions=['jpg', 'jpeg', 'png', 'gif']) -> tuple[list[str],list[str]]:
     """
     指定されたフォルダ内の画像ファイルのパスのリストを取得する関数
 
@@ -68,7 +68,7 @@ def get_savefile_image_url_paths(folder_name, image_extensions=['jpg', 'jpeg', '
     
     return base, after
 
-def make_random_tags(num=10):
+def make_random_tags(num=10) -> list[str]:
     anime_female_characters = ["Sakura", "Hinata", "Asuka", "Mikasa", "ZeroTwo", "Rem", "Nezuko", "Kagome", "Nami", "Lucy",
                             "Erza", "Bulma", "Hinamori", "Rukia", "Sango", "Ino", "Kallen", "Rei", "Winry", "Riza",
                             "Yoruichi", "Faye", "Mai", "C.C.", "Momo", "Holo", "Kushina", "Aqua", "Saber", "Kagura",
