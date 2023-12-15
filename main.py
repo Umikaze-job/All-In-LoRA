@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse
 from modules.folder_select import Folder_Select
 from modules.processing_images import Processing_Images
 from modules.Make_TextFile import Make_TextFile
+from modules.Make_Lora import Make_Lora
 
 app = FastAPI()
 
@@ -118,3 +119,8 @@ async def Make_TextFile_Caption_Tag(request:Request):
 @app.post("/api/make-textfile/captioning/start-caption")
 async def Make_TextFile_Start_Caption(request:Request):
     return await Make_TextFile.Start_Caption(request)
+
+#make_lora
+@app.post("/api/make-lora/image-items")
+async def Make_Lora_Image_Items(request:Request):
+    return await Make_Lora.Image_Items(request)
