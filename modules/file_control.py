@@ -4,8 +4,13 @@ import json
 import glob
 import random
 
+def get_user_setting_json():
+    file_path = os.path.join(get_root_folder_path(),"user_setting.json")
+    with open(file_path,"r") as f:
+        return json.load(f)
+
 # setting.jsonを読み込み
-def get_setting_file_json(folder_name:str) -> {"date":{},"taggingData":{"base":[],"after":[]}}:
+def get_setting_file_json(folder_name:str):
     file_path = os.path.join(get_root_folder_path(),"savefiles",folder_name,"setting.json")
     with open(file_path,"r") as f:
         return json.load(f)

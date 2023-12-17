@@ -30,7 +30,9 @@ def create_setting_file(folder_path):
         "date":{
             "Folder creation date": formatted_date
         },
-        "taggingData":{"base":[],"after":[]}
+        "taggingData":{"base":[],"after":[]},
+        "imageLearningSetting":{"image_items":{"base":[],"after":[]},"methods":[]},
+        "loraData":{}
     }
 
     # setting.jsonのパスを作成

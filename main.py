@@ -124,3 +124,15 @@ async def Make_TextFile_Start_Caption(request:Request):
 @app.post("/api/make-lora/image-items")
 async def Make_Lora_Image_Items(request:Request):
     return await Make_Lora.Image_Items(request)
+
+@app.post("/api/make-lora/press-start-lora")
+async def Make_Lora_Press_Start_Lora(request:Request):
+    return await Make_Lora.Press_Start_Lora(request)
+
+@app.post("/api/make-lora/save-data")
+async def Make_Lora_Save_Data(request:Request):
+    return await Make_Lora.Save_Data(request)
+
+@app.post("/api/make-lora/sd-model")
+async def Make_Lora_Sd_Model(request:Request):
+    return await Make_Lora.Sd_Model(request)
