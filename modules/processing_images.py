@@ -59,3 +59,11 @@ class Processing_Images:
             return {"data_paths": image_paths}
         except Exception as e:
             return {"error":"some error"}
+        
+    # 
+    async def Get_Backup_Images(request:Request):
+        data = await request.json()
+        folder_name = data.get('folderName')
+        image_list = get_images_list(os.path.join(get_savefiles(),folder_name,"BackUp"))# 画像のパスの一覧
+
+        return {"image_paths":[os.path.join(get_localhost_name(),"savefiles",folder_name,"BackUp",name) for name in image_list ]}

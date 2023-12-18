@@ -83,6 +83,9 @@ async def Processing_Images_Delete_Input_Images(request:Request):
 async def Processing_Images_Output_Input_Images(request:Request):
     return await Processing_Images.Output_Input_Images(request)
 
+@app.post("/api/processing-images/get-backup-images")
+async def Processing_Images_Get_Backup_Images(request:Request):
+    return await Processing_Images.Get_Backup_Images(request)
 # tagging
 @app.post("/api/make-textfile/tagging/write")
 async def Make_TextFile_Tagging(request:Request):
