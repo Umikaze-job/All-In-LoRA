@@ -86,6 +86,10 @@ async def Processing_Images_Output_Input_Images(request:Request):
 @app.post("/api/processing-images/get-backup-images")
 async def Processing_Images_Get_Backup_Images(request:Request):
     return await Processing_Images.Get_Backup_Images(request)
+
+@app.post("/api/processing-images/start-trimming")
+async def Processing_Images_Start_Trimming(request:Request):
+    return await Processing_Images.Start_Trimming(request)
 # tagging
 @app.post("/api/make-textfile/tagging/write")
 async def Make_TextFile_Tagging(request:Request):

@@ -2,6 +2,7 @@ import shutil
 from fastapi import Request, UploadFile, Form, File
 import os
 from .folder_path import get_savefiles,get_localhost_name
+from .gpu_modules.edit_images.character_trimming import character_trimming
 
 # 任意のフォルダの中にある画像ファイルの名前のリスト
 def get_images_list(folder_path:str):
@@ -67,3 +68,22 @@ class Processing_Images:
         image_list = get_images_list(os.path.join(get_savefiles(),folder_name,"BackUp"))# 画像のパスの一覧
 
         return {"image_paths":[os.path.join(get_localhost_name(),"savefiles",folder_name,"BackUp",name) for name in image_list ]}
+    
+    # トリミングをする
+    async def Start_Trimming(request:Request):
+        data = await request.json()
+        folder_name = data.get('folderName')
+        tags = data.get("tags")
+        setting = data.get("setting")
+
+        for data in tags:
+            image_path = os.path.join(get_savefiles(),folder_name,"images_folder",data["image_name"])
+            output_path = os.path.join(get_savefiles(),folder_name,"character_trimming_folder",data["image_name"])
+            print(f"array:{data['tagData']};Character in {'Character' in data['tagData']}")
+            if "Character" in data["tagData"]:
+                await character_trimming(image_path,output_path,setting['Character_Trimming_Data']['modelname'],setting['Character_Trimming_Data']['margin'])
+            
+        print(f"folder_name:{folder_name}")
+        print(f"margin:{setting['Character_Trimming_Data']['margin']}")
+        print(f"modelname:{setting['Character_Trimming_Data']['modelname']}")
+        return {"message":"OK!!!"}
