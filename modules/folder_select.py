@@ -205,8 +205,6 @@ class Folder_Select:
     # サムネイル設定
     async def Thumbnail(folderName: str = Form(), image: UploadFile = Form()):
         try:
-            print(folderName)
-            print(image)
             # ファイルを指定したフォルダに保存
             save_path = os.path.join(get_savefiles(),folderName, get_thumbnail_name())
             delete_thumbnails(os.path.join(get_savefiles(),folderName))

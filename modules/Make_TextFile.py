@@ -21,8 +21,6 @@ class Make_TextFile:
                 # URLからファイル名を取得
                 filename = os.path.basename(item)
 
-                # 拡張子を抜いた部分を取得
-                name_without_extension = os.path.splitext(filename)[0]
                 # すでにjson_data["taggingData"]["base"]["image_name"]に同じファイル名が存在するとき
                 if any(d.get("image_name") == filename for d in json_data["taggingData"]["base"]):
                     for data in json_data["taggingData"]["base"]:
@@ -90,12 +88,12 @@ class Make_TextFile:
 
         already_base = []
         for data in json_data["taggingData"]["base"]:
-            if data.get("tag") != None and data["tag"] != "":
+            if data.get("tag") != None and data["tag"] != [""]:
                 already_base.append(data["image_name"])
 
         already_after = []
         for data in json_data["taggingData"]["after"]:
-            if data.get("tag") != None and data["tag"] != "":
+            if data.get("tag") != None and data["tag"] != [""]:
                 already_after.append(data["image_name"])
 
         return {"base_images":already_base,"after_images":already_after}
