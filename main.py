@@ -83,6 +83,10 @@ async def Processing_Images_Delete_Input_Images(request:Request):
 async def Processing_Images_Output_Input_Images(request:Request):
     return await Processing_Images.Output_Input_Images(request)
 
+@app.post("/api/processing-images/delete-output-images")
+async def Processing_Images_Delete_Output_Images(request:Request):
+    return await Processing_Images.Delete_Output_Images(request)
+
 @app.post("/api/processing-images/get-backup-images")
 async def Processing_Images_Get_Backup_Images(request:Request):
     return await Processing_Images.Get_Backup_Images(request)
@@ -93,7 +97,7 @@ async def Processing_Images_Start_Trimming(request:Request):
 # tagging
 @app.post("/api/make-textfile/tagging/write")
 async def Make_TextFile_Tagging(request:Request):
-    return await Make_TextFile.Tagging(request)
+    return await Make_TextFile.Tagging02(request)
 
 @app.post("/api/make-textfile/tagging/getdata")
 async def Make_TextFile_Tagging_GetData(request:Request):

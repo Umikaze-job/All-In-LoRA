@@ -3,6 +3,8 @@ from fastapi import Request, UploadFile, Form, File
 import os
 from .folder_path import get_savefiles,get_localhost_name
 from .gpu_modules.edit_images.character_trimming import character_trimming
+from PIL import Image
+import asyncio
 
 # 任意のフォルダの中にある画像ファイルの名前のリスト
 def get_images_list(folder_path:str):
@@ -12,6 +14,14 @@ def get_images_list(folder_path:str):
 def delete_image(file_path:str):
     # 画像ファイルの拡張子を指定
     os.remove(file_path)
+
+# 画像のファイル名が変更されている画像パス
+def add_image_name_path(path,add_name):
+    folder = os.path.dirname(path)
+    # 拡張子を含むファイル名からファイル名と拡張子を分割
+    file_name, file_extension = os.path.splitext(os.path.basename(path))
+
+    return os.path.join(folder,file_name + add_name + file_extension)
             
 
 class Processing_Images:
@@ -60,7 +70,24 @@ class Processing_Images:
             return {"data_paths": image_paths}
         except Exception as e:
             return {"error":"some error"}
-        
+    
+    # 画像を加工した後の画像の削除
+    async def Delete_Output_Images(request:Request):
+        data = await request.json()
+        folder_name = data.get('folderName')
+        file_name = data.get('fileName')
+
+        file_path = os.path.join(get_savefiles(),folder_name,"character_trimming_folder",file_name)
+
+        try:
+            os.remove(file_path)
+            print(f"File {file_path} deleted successfully.")
+
+            return {"message":"OK!!"}
+        except FileNotFoundError:
+            return {"error":"File Not Found"}
+        except Exception as e:
+            return {"error":e}
     # 
     async def Get_Backup_Images(request:Request):
         data = await request.json()
@@ -73,9 +100,37 @@ class Processing_Images:
     async def Start_Trimming(request:Request):
         data = await request.json()
         folder_name = data.get('folderName')
-        tags = data.get("tags")
+        file_name = data.get('fileName')
         setting = data.get("setting")
+        type_name = data.get("type")
+        is_resize = data.get("isResize")
 
+        base_image_path = os.path.join(get_savefiles(),folder_name,"images_folder",file_name)
+        after_image_path = os.path.join(get_savefiles(),folder_name,"character_trimming_folder",file_name)
+
+        # 画像を開く
+        img = Image.open(base_image_path)
+        if type_name == "Character":
+            # ここでCharacter_Trimmingの処理をする
+            after_image_path = add_image_name_path(after_image_path,"_character")
+            pass
+        elif type_name == "Face":
+            # ここでFace_Trimmingの処理をする
+            after_image_path = add_image_name_path(after_image_path,"_face")
+            pass
+        elif type_name == "Body":
+            # ここでBody_Trimmingの処理をする
+            after_image_path = add_image_name_path(after_image_path,"_body")
+            pass
+        
+        if is_resize == True:
+            # ここでResizeの処理をする
+            pass
+
+        await asyncio.sleep(0.5)
+        img.save(after_image_path)
+
+        return {"message":"OK!!!"}
         for data in tags:
             image_path = os.path.join(get_savefiles(),folder_name,"images_folder",data["image_name"])
             output_path = os.path.join(get_savefiles(),folder_name,"character_trimming_folder",data["image_name"])

@@ -1,5 +1,5 @@
 from fastapi import Request, UploadFile, Form, File
-from .folder_path import get_root_folder_path
+from .folder_path import get_root_folder_path,get_savefiles
 from .file_control import get_savefile_image_paths, get_savefile_image_url_paths, get_setting_file_json,write_setting_file_json,make_random_tags
 import asyncio
 import os
@@ -65,6 +65,50 @@ class Make_TextFile:
         except Exception as e:
             return {"error": "some error"}
         
+    async def Tagging02(request:Request):
+        data = await request.json()
+        file_name = data.get('fileName')
+        folder_name = data.get('folderName')
+        type_name = data.get('type')
+
+        json_data = get_setting_file_json(folder_name)
+
+        if type_name == "base":
+            file_path = os.path.join(get_savefiles(),folder_name,"images_folder",file_name)
+            # json_data["taggingData"]["base"]["image_name"]の値がfile_nameと同じ名前の連想配列があるとき
+            if any(file_name == item.get('image_name') for item in json_data["taggingData"]["base"]):
+                rensou = [item for item in json_data["taggingData"]["base"] if item.get('image_name') == file_name]
+                rensou[0]["tag"] = make_random_tags(10) #タグを指定
+            else:
+                tag = make_random_tags(10) #タグを指定
+                json_data["taggingData"]["base"].append({"image_name":file_name,"tag":tag})
+        elif type_name == "after":
+            file_path = os.path.join(get_savefiles(),folder_name,"images_folder",file_name)
+            # json_data["taggingData"]["after"]["image_name"]の値がfile_nameと同じ名前の連想配列があるとき
+            if any(file_name == item.get('image_name') for item in json_data["taggingData"]["after"]):
+                rensou = [item for item in json_data["taggingData"]["after"] if item.get('image_name') == file_name]
+                rensou[0]["tag"] = make_random_tags(10) #タグを指定
+            else:
+                tag = make_random_tags(10) #タグを指定
+                json_data["taggingData"]["after"].append({"image_name":file_name,"tag":tag})
+        elif type_name == "deleteBase":
+            # json_data["taggingData"]["base"]["image_name"]の値がfile_nameと同じ名前の連想配列があるとき
+            if any(file_name == item.get('image_name') for item in json_data["taggingData"]["base"]):
+                rensou = [item for item in json_data["taggingData"]["base"] if item.get('image_name') == file_name]
+                if rensou[0].get("tag") != None:
+                    rensou[0]["tag"] = [""]
+            pass
+        elif type_name == "deleteAfter":
+            # json_data["taggingData"]["after"]["image_name"]の値がfile_nameと同じ名前の連想配列があるとき
+            if any(file_name == item.get('image_name') for item in json_data["taggingData"]["after"]):
+                rensou = [item for item in json_data["taggingData"]["after"] if item.get('image_name') == file_name]
+                if rensou[0].get("tag") != None:
+                    rensou[0]["tag"] = [""]
+
+        write_setting_file_json(folder_name,json_data)
+
+        return {"message":"OK!!!"}
+        
     async def Tagging_GetData(request:Request):
         try:
             data = await request.json()
@@ -76,7 +120,11 @@ class Make_TextFile:
                 json_data["taggingData"] = {"base":[],"after":[]}
                 write_setting_file_json(folder_name,json_data)
 
-            return {"tagdata":json_data["taggingData"]}
+            taggingData = {"base":[],"after":[]}
+            taggingData["base"] = [item for item in json_data["taggingData"]["base"] if item["tag"] != [""] and item["tag"] != None and item["tag"] != []]
+            taggingData["after"] = [item for item in json_data["taggingData"]["after"] if item["tag"] != [""] and item["tag"] != None and item["tag"] != []]
+
+            return {"tagdata":taggingData}
         except Exception as e:
             return {"error": "some error"}
         
