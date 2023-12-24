@@ -1,3 +1,4 @@
+import traceback
 from fastapi import Request, UploadFile, Form
 from fastapi.responses import JSONResponse
 import os
@@ -41,7 +42,7 @@ def create_setting_file(folder_path):
 
     # setting.jsonを作成し、データを書き込む
     with open(setting_file_path, 'w') as file:
-        json.dump(settings_data, file, indent=4)
+        json.dump(settings_data, file, indent=2)
 
     print(f"Setting file created at: {setting_file_path}")
 
@@ -51,10 +52,14 @@ def make_new_folders(folder_path):
                     "character_trimming_folder",
                     "fine_tuning_folder",
                     "output_folder",
+                    "thumbnail_folder",
                     "BackUp"]
     
     for name in folder_names:
         os.makedirs(os.path.join(folder_path,name))
+
+    os.makedirs(os.path.join(folder_path,"thumbnail_folder","base"))
+    os.makedirs(os.path.join(folder_path,"thumbnail_folder","after"))
 
 def get_setting_json(folder_path):
     # setting.jsonのパスを作成
@@ -101,7 +106,7 @@ def get_thumbnail_path(folder_path):
     regex_pattern = re.compile(r"thumbnail_.*\.png")
 
     # パターンにマッチするファイルを抽出
-    matching_files = [file for file in files if regex_pattern.match(file)]
+    matching_files = list(filter(lambda file: regex_pattern.match(file),files))
 
     if len(matching_files) != 0:
         return matching_files[0]
@@ -150,7 +155,7 @@ def get_folder_paths_from_savefiles(filenames:[]):
 # 指定したフォルダの中に指定した名前のフォルダがあるかどうか
 def is_folder_exists(parent_folder, target_folder_name):
     # 指定したフォルダ内のすべてのフォルダを取得
-    all_folders = [f for f in os.listdir(parent_folder) if os.path.isdir(os.path.join(parent_folder, f))]
+    all_folders = list(filter(lambda f:os.path.isdir(os.path.join(parent_folder, f)),os.listdir(parent_folder)))
 
     # 指定した名前のフォルダが存在するか確認
     return target_folder_name in all_folders
@@ -158,28 +163,31 @@ def is_folder_exists(parent_folder, target_folder_name):
 class Folder_Select:
     # フォルダ作成
     async def Create(request:Request):
-        data = await request.json()
-        folder_name = data.get('name')
-        folder_path = os.path.join(get_savefiles(),folder_name)
-        if is_folder_exists(get_savefiles(),folder_name):
-            return {"message":"Duplicate names"}
-        else:
-            try:
+        try:
+            data = await request.json()
+            folder_name = data.get('name')
+            folder_path = os.path.join(get_savefiles(),folder_name)
+            if is_folder_exists(get_savefiles(),folder_name):
+                return {"Duplicate":"Duplicate names"}
+            else:
                 os.makedirs(folder_path, exist_ok=True)
                 make_thumbnail(folder_path)
                 create_setting_file(folder_path)
                 make_new_folders(folder_path)
                 return {"message": "Folder Created!!!"}
-            except OSError as e:
-                return {"message": "Error"}
+        except Exception as e:
+            return {"error":traceback.format_exc()}
     
     async def Get_Folders(request:Request):
-        dir_path = get_savefiles()
-        directories = [f for f in os.listdir(dir_path) if os.path.isdir(os.path.join(dir_path, f))]
+        try:
+            dir_path = get_savefiles()
+            directories = list(filter(lambda f: os.path.isdir(os.path.join(dir_path, f)),os.listdir(dir_path)))
 
-        # 更新日時でソート
-        directories_sorted = sorted(directories, key=lambda f: get_setting_json(os.path.join(dir_path, f))["date"]["Folder creation date"], reverse=True)
-        return {"directoriesName":directories_sorted,"thumbnail":get_folder_paths_from_savefiles(directories_sorted)}
+            # 更新日時でソート
+            directories_sorted = sorted(directories, key=lambda f: get_setting_json(os.path.join(dir_path, f))["date"]["Folder creation date"], reverse=True)
+            return {"directoriesName":directories_sorted,"thumbnail":get_folder_paths_from_savefiles(directories_sorted)}
+        except Exception as e:
+            return {"error":traceback.format_exc()}
     
     # 名前変更
     async def Rename(request:Request):
@@ -198,9 +206,9 @@ class Folder_Select:
                 os.rename(old_path, new_path)
                 return {"message": "ok"}
             except FileNotFoundError:
-                return {"error":"file not found"}
+                return {"error":"File Not Found"}
             except Exception as e:
-                return {"error":"some error"}
+                return {"error":traceback.format_exc()}
             
     # サムネイル設定
     async def Thumbnail(folderName: str = Form(), image: UploadFile = Form()):
@@ -212,7 +220,7 @@ class Folder_Select:
                 shutil.copyfileobj(image.file, buffer)
             return {"message":"Thumbnails have been set up!!!!"}
         except Exception as e:
-            return JSONResponse(content={"message": f"Error uploading file: {e}"}, status_code=500)
+            return {"error": traceback.format_exc()}
         
     async def Delete(request:Request):
         try:
@@ -220,9 +228,9 @@ class Folder_Select:
             folder_name = data.get('folderName')
             shutil.rmtree(os.path.join(get_savefiles(),folder_name))
             return {"message": "Folder Deleted!!!"}
-        except FileNotFoundError:
-            return {"error":"not found"}
-        except PermissionError:
-            return {"error":"PermissionError"}
+        except FileNotFoundError as e:
+            return {"error":f"not found\n {e}"}
+        except PermissionError as e:
+            return {"error":f"PermissionError\n {e}"}
         except Exception as e:
-            return {"error":"some error"}
+            return {"error":traceback.format_exc()}

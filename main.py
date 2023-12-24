@@ -23,7 +23,7 @@ class MyStatics(StaticFiles):
 app.mount("/assets", app=StaticFiles(directory="assets"), name="assets")
 
 # 静的コンテンツのエンドポイント
-app.mount("/savefiles", app=MyStatics(directory="savefiles"), name="savefiles")
+app.mount("/savefiles", app=StaticFiles(directory="savefiles"), name="savefiles")
 
 origins = [
     "*",

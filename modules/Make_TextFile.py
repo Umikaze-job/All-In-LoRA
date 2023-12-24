@@ -1,5 +1,6 @@
+import traceback
 from fastapi import Request, UploadFile, Form, File
-from .folder_path import get_root_folder_path,get_savefiles
+from .folder_path import get_root_folder_path,get_savefiles,get_localhost_name
 from .file_control import get_savefile_image_paths, get_savefile_image_url_paths, get_setting_file_json,write_setting_file_json,make_random_tags
 import asyncio
 import os
@@ -63,7 +64,7 @@ class Make_TextFile:
             return {"message":"File Tagged!!"}
         
         except Exception as e:
-            return {"error": "some error"}
+            return {"error": traceback.format_exc()}
         
     async def Tagging02(request:Request):
         data = await request.json()
@@ -126,7 +127,7 @@ class Make_TextFile:
 
             return {"tagdata":taggingData}
         except Exception as e:
-            return {"error": "some error"}
+            return {"error": traceback.format_exc()}
         
     async def Already_Tag(request:Request):
         data = await request.json()
@@ -153,9 +154,44 @@ class Make_TextFile:
 
         json_data = get_setting_file_json(folder_name)
 
-        baseurl, afterurl = get_savefile_image_url_paths(folder_name)
+        base_image_dir = os.path.join(get_savefiles(),folder_name,"images_folder")
+        after_image_dir = os.path.join(get_savefiles(),folder_name,"character_trimming_folder")
+        #base
 
-        return {"base":json_data["taggingData"]["base"],"after":json_data["taggingData"]["after"],"beforeurl":baseurl,"afterurl":afterurl}
+        #images_folderフォルダの中にある画像の名前
+        base_image_names = list(filter(lambda file:os.path.isfile(os.path.join(base_image_dir, file)),os.listdir(base_image_dir)))
+        base_data = []
+        for name in base_image_names:
+            image_path = os.path.join(get_localhost_name(),"savefiles",folder_name,"images_folder",name)
+            thumbnali_path = os.path.join(get_localhost_name(),"savefiles",folder_name,"thumbnail_folder","base",name)
+            
+            tag_data = []
+            #配列内の連想配列の中にnameと同じ値の'image_name'が存在し、'tag'キーと値が存在するか
+            main_data = list(filter(lambda data:data.get("image_name") == name,json_data["taggingData"]["base"]))
+            if len(main_data) != 0 and main_data[0].get("tag") != None:
+                tag_data = main_data[0].get("tag")
+
+            base_data.append({"image_path":image_path,"thumbnail_path":thumbnali_path,"file_name":name,"tag":tag_data})
+
+        #after
+        
+        #images_folderフォルダの中にある画像の名前
+        after_image_names = list(filter(lambda file:os.path.isfile(os.path.join(after_image_dir, file)),os.listdir(after_image_dir)))
+        after_data = []
+        for name in after_image_names:
+            image_path = os.path.join(get_localhost_name(),"savefiles",folder_name,"character_trimming_folder",name)
+            thumbnali_path = os.path.join(get_localhost_name(),"savefiles",folder_name,"thumbnail_folder","after",name)
+            
+            tag_data = []
+            #配列内の連想配列の中にnameと同じ値の'image_name'が存在し、'tag'キーと値が存在するか
+            main_data = list(filter(lambda data:data.get("image_name") == name,json_data["taggingData"]["after"]))
+            if len(main_data) != 0 and main_data[0].get("tag") != None:
+                tag_data = main_data[0].get("tag")
+
+            after_data.append({"image_path":image_path,"thumbnail_path":thumbnali_path,"file_name":name,"tag":tag_data})
+
+
+        return {"base":base_data,"after":after_data}
     
     async def EditTag_Write(request:Request):
         data = await request.json()
@@ -165,20 +201,23 @@ class Make_TextFile:
 
         json_data = get_setting_file_json(folder_name)
 
-        print(f"folder_name:{folder_name}")
-        print(f"base_data:{base_data}")
         # base_dataの処理
         for data in base_data:
-            print(f"data:{data}")
-            for base_data_item in json_data["taggingData"]["base"]:
-                if base_data_item.get("image_name") == data["file_name"]:
-                    base_data_item["tag"] = data["tag"].split(",")
+            # json_data["taggingData"]["base"]にdataの"file_name"と同じ名前の"image_name"キーの値が存在するか
+            base_data = list(filter(lambda item:item.get("image_name") == data["file_name"],json_data["taggingData"]["base"]))
+            if len(base_data) != 0:
+                base_data[0]["tag"] = data["tag"].split(",")
+            else:
+                json_data["taggingData"]["base"].append({'image_name':data["file_name"],"tag":data["tag"].split(",")})
 
-        # # after_dataの処理
+        # after_dataの処理
         for data in after_data:
-            for after_data_item in json_data["taggingData"]["after"]:
-                if after_data_item.get("image_name") == data["file_name"]:
-                    after_data_item["tag"] = data["tag"].split(",")
+            # json_data["taggingData"]["after"]にdataの"file_name"と同じ名前の"image_name"キーの値が存在するか
+            after_data = list(filter(lambda item:item.get("image_name") == data["file_name"],json_data["taggingData"]["after"]))
+            if len(after_data) != 0:
+                after_data[0]["tag"] = data["tag"].split(",")
+            else:
+                json_data["taggingData"]["after"].append({'image_name':data["file_name"],"tag":data["tag"].split(",")})
 
         write_setting_file_json(folder_name,json_data)
 
@@ -190,31 +229,32 @@ class Make_TextFile:
         folder_name:str = data.get('folderName')
 
         json_data = get_setting_file_json(folder_name)
-        base, after = get_savefile_image_url_paths(folder_name)
+        base_image_url, after_image_url = get_savefile_image_url_paths(folder_name)
 
         base_data = []
-        # baseデータ
-        for data in base:
-            file_name = data.split('\\')[-1]
-            # json_data["taggingData"]["base"]の中にimage_nameキーが存在し、captionキーと値が存在する場合
-            if any(d.get("image_name") == file_name and d.get("caption",None) != None for d in json_data["taggingData"]["base"]):
-                # json_data["taggingData"]["base"]からimage_nameキーの値がfile_nameである連想配列を取得する
-                image_data = next((item for item in json_data["taggingData"]["base"] if item["image_name"] == file_name), None)
-                base_data.append({"path":data,"caption":image_data["caption"]})
-            else:
-                base_data.append({"path":data,"caption":""})
-
         after_data = []
-        # afterデータ
-        for data in after:
-            file_name = data.split('\\')[-1]
-            # json_data["taggingData"]["after"]の中にimage_nameキーが存在し、captionキーと値が存在する場合
-            if any(d.get("image_name") == file_name and d.get("caption",None) != None for d in json_data["taggingData"]["after"]):
-                # json_data["taggingData"]["after"]からimage_nameキーの値がfile_nameである連想配列を取得する
-                image_data = next((item for item in json_data["taggingData"]["after"] if item["image_name"] == file_name), None)
-                after_data.append({"path":data,"caption":image_data["caption"]})
+
+        # baseデータ
+        for image_url in base_image_url:
+            file_name = os.path.basename(image_url)
+            thumbnail_path = os.path.join(get_localhost_name(),"savefiles",folder_name,"thumbnail_folder","base",file_name)
+
+            main_data = list(filter(lambda item:item.get("image_name") == file_name,json_data["taggingData"]["base"]))
+            if len(main_data) != 0 and main_data[0].get("caption") != None:
+                base_data.append({"path":image_url,"thumbnail_path":thumbnail_path,"caption":main_data[0]["caption"]})
             else:
-                after_data.append({"path":data,"caption":""})
+                base_data.append({"path":image_url,"thumbnail_path":thumbnail_path,"caption":""})
+
+        # afterデータ
+        for image_url in after_image_url:
+            file_name = os.path.basename(image_url)
+            thumbnail_path = os.path.join(get_localhost_name(),"savefiles",folder_name,"thumbnail_folder","after",file_name)
+
+            main_data = list(filter(lambda item:item.get("image_name") == file_name,json_data["taggingData"]["after"]))
+            if len(main_data) != 0 and main_data[0].get("caption") != None:
+                base_data.append({"path":image_url,"thumbnail_path":thumbnail_path,"caption":main_data[0]["caption"]})
+            else:
+                base_data.append({"path":image_url,"thumbnail_path":thumbnail_path,"caption":""})
 
         return {"base":base_data,"after":after_data}
     

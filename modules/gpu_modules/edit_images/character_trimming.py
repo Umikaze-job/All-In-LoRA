@@ -1,10 +1,11 @@
 from rembg import remove,new_session
 from PIL import Image
+import traceback
 
-async def character_trimming(file_path,output_path,model_name,margin):
+async def character_trimming(base_image:Image,model_name,margin):
     session = new_session(model_name)
 
-    alpha_image = remove(Image.open(file_path),session=session)
+    alpha_image = remove(base_image,session=session)
     
     # 一定値以下のアルファ値を0にするしきい値を設定
     threshold = 128  # この値を必要に応じて調整
@@ -22,7 +23,7 @@ async def character_trimming(file_path,output_path,model_name,margin):
     # 元の画像に新しいアルファチャンネルを設定
     alpha_image.putalpha(alpha_channel)
     # ちょっと大きくする
-    size = Image.open(file_path).size
+    size = base_image.size
     alpha_box = alpha_image.getbbox()
 
     # 座標を個別に取り出して演算
@@ -32,6 +33,4 @@ async def character_trimming(file_path,output_path,model_name,margin):
     bottom = min(size[1], int(alpha_box[3]) + margin)
 
     # 新しい座標を使って画像を切り抜く
-    image = Image.open(file_path).crop((left, top, right, bottom))
-
-    image.save(output_path)  # PIL画像オブジェクトを指定のフォルダに保存
+    return base_image.crop((left, top, right, bottom))

@@ -1,7 +1,7 @@
 from fastapi import Request
 import os
 from .folder_path import get_fine_tuning_folder,get_root_folder_path
-from .file_control import get_savefile_image_paths, write_setting_file_json,get_savefile_image_url_paths,get_setting_file_json,get_user_setting_json
+from .file_control import get_savefile_image_paths, write_setting_file_json,get_savefile_image_url_paths,get_setting_file_json,get_user_setting_json,get_thumbnail_url_paths
 import subprocess
 import shutil
 from pathlib import Path
@@ -44,7 +44,8 @@ class Make_Lora:
 
         json_data = get_setting_file_json(folder_name)
 
-        return {"base":base,"after":after,"image_items":json_data["imageLearningSetting"]["image_items"],"methods":json_data["imageLearningSetting"]["methods"],"loraData":json_data["loraData"]}
+        base_thumbnail,after_thumbnail = get_thumbnail_url_paths(folder_name)
+        return {"base":base,"after":after,"base_thumbnail":base_thumbnail,"after_thumbnail":after_thumbnail,"image_items":json_data["imageLearningSetting"]["image_items"],"methods":json_data["imageLearningSetting"]["methods"],"loraData":json_data["loraData"]}
     
     async def Save_Data(request:Request):
         data = await request.json()
@@ -141,7 +142,7 @@ class Make_Lora:
 
             #? メタデータに書き込む
             with open(os.path.join(folder,"meta_data.json"),"w") as f:
-                f.write(json.dumps(json_write))
+                f.write(json.dumps(json_write, indent=2))
                 
 
         log_folder = os.path.join(main_folder,"log")
