@@ -10,4 +10,4 @@ models/face_detect_models/**
 !models/tagger_models/*.txt
 savefiles/**
 !savefiles/savefile.txt
-sd-scripts
+tools/**
