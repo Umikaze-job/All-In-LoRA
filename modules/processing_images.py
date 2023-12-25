@@ -45,7 +45,7 @@ class Processing_Images:
             file_name, extension = os.path.splitext(upload_path)
             thumbnail_path = os.path.join(get_savefiles(),folderName,"thumbnail_folder","base", file.filename)
             if extension != ".webp":
-                image = Image.open(upload_path).convert("RGB")
+                image = Image.open(upload_path).convert("RGBA")
                 image.save(file_name + ".webp", "webp")
 
                 os.remove(upload_path)
@@ -55,7 +55,7 @@ class Processing_Images:
                 thumbnail_folder,_ = os.path.splitext(thumbnail_path)
                 image.save(thumbnail_folder + ".webp",quality=50,format="webp")
             else:
-                image = Image.open(upload_path).convert("RGB")
+                image = Image.open(upload_path).convert("RGBA")
 
                 image.thumbnail((600,400))
 
