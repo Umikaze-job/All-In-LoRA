@@ -4,7 +4,9 @@ import os
 from .folder_path import get_savefiles,get_localhost_name
 from .file_control import get_savefile_image_url_paths,get_thumbnail_url_paths
 from .gpu_modules.edit_images.character_trimming import character_trimming
+from .gpu_modules.edit_images.face_trimming import face_trimming
 from PIL import Image
+import glob
 import asyncio
 import traceback
 
@@ -141,6 +143,7 @@ class Processing_Images:
                 after_thumbnail_path = add_image_name_path(after_thumbnail_path,"_character")
             elif type_name == "Face":
                 # ここでFace_Trimmingの処理をする
+                await face_trimming(img,base_image_path,folder_name)
                 after_image_path = add_image_name_path(after_image_path,"_face")
                 after_thumbnail_path = add_image_name_path(after_thumbnail_path,"_face")
             elif type_name == "Body":
@@ -162,3 +165,15 @@ class Processing_Images:
         except Exception as e:
             print(traceback.format_exc()) 
             return {"error":traceback.format_exc()}
+        
+    # テスト用処理
+    # character_trimming_folderフォルダの中にある画像を消す
+    async def delete_character_trimming_folder_file_Test(request:Request):
+        data = await request.json()
+        folder_name = data.get('folderName')
+        images = glob.glob(os.path.join(get_savefiles(),folder_name,"character_trimming_folder","*"))
+
+        for item in images:
+            os.remove(item)
+        print("delete_files")
+        return {"message":"OK!!!"}

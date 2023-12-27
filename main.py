@@ -148,8 +148,8 @@ async def Make_Lora_Save_Data(request:Request):
 async def Make_Lora_Sd_Model(request:Request):
     return await Make_Lora.Sd_Model(request)
 
-@app.post("/test/mytest")
-async def MyTest(request:Request):
-    data = await request.json()
-    json_data = data.get("chinko")
-    return {"message": json_data}
+
+# Test用のパス
+@app.post('/test/processing-images/delete-character_trimming_folder-images')
+async def delete_character_trimming_folder_file_Test(request:Request):
+    return await Processing_Images.delete_character_trimming_folder_file_Test(request)

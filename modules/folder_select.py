@@ -53,6 +53,7 @@ def make_new_folders(folder_path):
                     "fine_tuning_folder",
                     "output_folder",
                     "thumbnail_folder",
+                    "text_folder",
                     "BackUp"]
     
     for name in folder_names:
@@ -60,6 +61,8 @@ def make_new_folders(folder_path):
 
     os.makedirs(os.path.join(folder_path,"thumbnail_folder","base"))
     os.makedirs(os.path.join(folder_path,"thumbnail_folder","after"))
+
+    os.makedirs(os.path.join(folder_path,"text_folder","face_detect"))
 
 def get_setting_json(folder_path):
     # setting.jsonのパスを作成

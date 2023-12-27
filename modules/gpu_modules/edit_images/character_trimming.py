@@ -1,6 +1,5 @@
 from rembg import remove,new_session
 from PIL import Image
-import traceback
 
 async def character_trimming(base_image:Image,model_name,margin):
     session = new_session(model_name)
