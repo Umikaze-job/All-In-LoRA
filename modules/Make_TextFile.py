@@ -206,18 +206,18 @@ class Make_TextFile:
             # json_data["taggingData"]["base"]にdataの"file_name"と同じ名前の"image_name"キーの値が存在するか
             base_data = list(filter(lambda item:item.get("image_name") == data["file_name"],json_data["taggingData"]["base"]))
             if len(base_data) != 0:
-                base_data[0]["tag"] = data["tag"].split(",")
+                base_data[0]["imgtag"] = data["imgtag"].split(",")
             else:
-                json_data["taggingData"]["base"].append({'image_name':data["file_name"],"tag":data["tag"].split(",")})
+                json_data["taggingData"]["base"].append({'image_name':data["file_name"],"tag":data["imgtag"].split(",")})
 
         # after_dataの処理
         for data in after_data:
             # json_data["taggingData"]["after"]にdataの"file_name"と同じ名前の"image_name"キーの値が存在するか
             after_data = list(filter(lambda item:item.get("image_name") == data["file_name"],json_data["taggingData"]["after"]))
             if len(after_data) != 0:
-                after_data[0]["tag"] = data["tag"].split(",")
+                after_data[0]["imgtag"] = data["imgtag"].split(",")
             else:
-                json_data["taggingData"]["after"].append({'image_name':data["file_name"],"tag":data["tag"].split(",")})
+                json_data["taggingData"]["after"].append({'image_name':data["file_name"],"tag":data["imgtag"].split(",")})
 
         write_setting_file_json(folder_name,json_data)
 
@@ -252,9 +252,9 @@ class Make_TextFile:
 
             main_data = list(filter(lambda item:item.get("image_name") == file_name,json_data["taggingData"]["after"]))
             if len(main_data) != 0 and main_data[0].get("caption") != None:
-                base_data.append({"path":image_url,"thumbnail_path":thumbnail_path,"caption":main_data[0]["caption"]})
+                after_data.append({"path":image_url,"thumbnail_path":thumbnail_path,"caption":main_data[0]["caption"]})
             else:
-                base_data.append({"path":image_url,"thumbnail_path":thumbnail_path,"caption":""})
+                after_data.append({"path":image_url,"thumbnail_path":thumbnail_path,"caption":""})
 
         return {"base":base_data,"after":after_data}
     
@@ -270,23 +270,23 @@ class Make_TextFile:
         for data in base_datas:
             if data["caption"] != "":
                 # json_data["taggingData"]["base"]のなかにimage_nameキーの値がdata["imageName"]である連想配列があるかどうか
-                if any(d.get("image_name") == data["imageName"] for d in json_data["taggingData"]["base"]):
-                    image_data = next((item for item in json_data["taggingData"]["base"] if item["image_name"] == data["imageName"]), None)
+                if any(d.get("image_name") == data["file_name"] for d in json_data["taggingData"]["base"]):
+                    image_data = next((item for item in json_data["taggingData"]["base"] if item["image_name"] == data["file_name"]), None)
                     image_data["caption"] = data["caption"]
                 # なければ
                 else:
-                    json_data["taggingData"]["base"].append({"image_name":data["imageName"],"caption":data["caption"]})
+                    json_data["taggingData"]["base"].append({"image_name":data["file_name"],"caption":data["caption"]})
 
         # json_data["taggingData"]["after"]の各連想配列のデータを更新する
         for data in after_datas:
             if data["caption"] != "":
-                # json_data["taggingData"]["after"]のなかにimage_nameキーの値がdata["imageName"]である連想配列があるかどうか
-                if any(d.get("image_name") == data["imageName"] for d in json_data["taggingData"]["after"]):
-                    image_data = next((item for item in json_data["taggingData"]["after"] if item["image_name"] == data["imageName"]), None)
+                # json_data["taggingData"]["after"]のなかにimage_nameキーの値がdata["file_name"]である連想配列があるかどうか
+                if any(d.get("image_name") == data["file_name"] for d in json_data["taggingData"]["after"]):
+                    image_data = next((item for item in json_data["taggingData"]["after"] if item["image_name"] == data["file_name"]), None)
                     image_data["caption"] = data["caption"]
                 # なければ
                 else:
-                    json_data["taggingData"]["after"].append({"image_name":data["imageName"],"caption":data["caption"]})
+                    json_data["taggingData"]["after"].append({"image_name":data["file_name"],"caption":data["caption"]})
 
         write_setting_file_json(folder_name,json_data)
 
