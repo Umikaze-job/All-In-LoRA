@@ -147,3 +147,9 @@ async def Make_Lora_Save_Data(request:Request):
 @app.post("/api/make-lora/sd-model")
 async def Make_Lora_Sd_Model(request:Request):
     return await Make_Lora.Sd_Model(request)
+
+@app.post("/test/mytest")
+async def MyTest(request:Request):
+    data = await request.json()
+    json_data = data.get("chinko")
+    return {"message": json_data}
