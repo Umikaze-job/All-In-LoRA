@@ -148,7 +148,6 @@ async def Make_Lora_Save_Data(request:Request):
 async def Make_Lora_Sd_Model(request:Request):
     return await Make_Lora.Sd_Model(request)
 
-
 # Test用のパス
 @app.post('/test/processing-images/delete-character_trimming_folder-images')
 async def delete_character_trimming_folder_file_Test(request:Request):

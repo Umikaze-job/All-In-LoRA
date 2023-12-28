@@ -8,12 +8,12 @@ client = TestClient(app)
 # processing-images 
 # start-trimming
 
-#pytest -m trimming -vv
+# pytest -m trimming -vv
 @pytest.mark.trimming
 def test_Start_Trimming_Test():
     response = client.post("/api/processing-images/start-trimming",json={
         "folderName": "data01",
-        "fileName": "bluearchive0203.webp",
+        "fileName": "bluearchive0235.webp",
         "setting": {
             "Character_Trimming_Data": {
                 "modelname": "isnet-anime",
