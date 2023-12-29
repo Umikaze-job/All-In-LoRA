@@ -8,22 +8,35 @@ client = TestClient(app)
 # processing-images 
 # start-trimming
 
-# pytest -m trimming -vv
+# pytest -m trimming -vv -s
 @pytest.mark.trimming
 def test_Start_Trimming_Test():
     response = client.post("/api/processing-images/start-trimming",json={
         "folderName": "data01",
-        "fileName": "bluearchive0235.webp",
+        "fileName": "arknights10.webp",
         "setting": {
             "Character_Trimming_Data": {
                 "modelname": "isnet-anime",
-                "margin": 12
+                "margin": 12,
+                "erode_size":10,
+                "foreground_threshold":180,
+                "background_threshold":20
+            },
+            "Face_Trimming_Data":{
+                "modelname":"anime-face.pt",
+                "spread_top":30,
+                "spread_left":14,
+                "spread_right":14,
+                "spread_bottom":8,
             },
             "Body_Trimming_Data": {
-                "modelname": "isnet-anime",
-                "TransparencyThreshold": 0.3,
-                "ImageSizeThreshold": 0.3,
-                "margin": 14
+                "modelname": "anime-face.pt",
+                "width_rate":2,
+                "height_rate":3,
+                "spread_top":30,
+                "spread_left":14,
+                "spread_right":14,
+                "spread_bottom":8,
             },
             "Resize": {
                 "lengthSide": 512,
@@ -31,7 +44,7 @@ def test_Start_Trimming_Test():
             }
         },
         "isResize": False,
-        "type": "Face"
+        "type": "Body"
     })
     assert response.json() == {"message":"OK!!!"}
 

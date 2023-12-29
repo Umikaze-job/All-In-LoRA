@@ -91,6 +91,11 @@ async def Processing_Images_Delete_Output_Images(request:Request):
 async def Processing_Images_Get_Backup_Images(request:Request):
     return await Processing_Images.Get_Backup_Images(request)
 
+#trimming-setting
+@app.post("/api/processing-images/get-trimming-models")
+async def Processing_Images_Get_Trimming_Models(request:Request):
+    return await Processing_Images.Get_Trimming_Models(request)
+
 @app.post("/api/processing-images/start-trimming")
 async def Processing_Images_Start_Trimming(request:Request):
     return await Processing_Images.Start_Trimming(request)

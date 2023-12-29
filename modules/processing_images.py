@@ -1,7 +1,9 @@
 import shutil
 from fastapi import Request, UploadFile, Form, File
 import os
-from .folder_path import get_savefiles,get_localhost_name
+
+from .gpu_modules.edit_images.body_trimming import body_trimming
+from .folder_path import get_savefiles,get_localhost_name,get_root_folder_path
 from .file_control import get_savefile_image_url_paths,get_thumbnail_url_paths
 from .gpu_modules.edit_images.character_trimming import character_trimming
 from .gpu_modules.edit_images.face_trimming import face_trimming
@@ -9,6 +11,7 @@ from PIL import Image
 import glob
 import asyncio
 import traceback
+from typing import List
 
 # 任意のフォルダの中にある画像ファイルの名前のリスト
 def get_images_list(folder_path:str):
@@ -16,7 +19,7 @@ def get_images_list(folder_path:str):
     return list(map(lambda f:os.path.basename(f),image_list))
 
 # 画像のファイル名が変更されている画像パス
-def add_image_name_path(path,add_name):
+def add_image_name_path(path,add_name) -> str:
     folder = os.path.dirname(path)
     # 拡張子を含むファイル名からファイル名と拡張子を分割
     file_name, file_extension = os.path.splitext(os.path.basename(path))
@@ -117,6 +120,13 @@ class Processing_Images:
 
         return {"image_paths":[os.path.join(get_localhost_name(),"savefiles",folder_name,"BackUp",name) for name in image_list ]}
     
+    async def Get_Trimming_Models(request:Request):
+        models = glob.glob(os.path.join(get_root_folder_path(),"models","face_detect_models","**"))
+
+        models = list(map(lambda path:os.path.basename(path),models))
+
+        return {"models":models}
+
     # トリミングをする
     async def Start_Trimming(request:Request):
         try:
@@ -133,21 +143,26 @@ class Processing_Images:
 
             # 画像を開く
             img = Image.open(base_image_path)
+            result_imgset:List[Image.Image] = []
             if type_name == "Character":
                 # ここでCharacter_Trimmingの処理をする
                 ch_setting = setting["Character_Trimming_Data"]
-                img = await character_trimming(img,ch_setting["modelname"],ch_setting["margin"])
+                img = await character_trimming(img,ch_setting)
                 if type(img) == "Exception":
                     raise Exception(img)
+                result_imgset.append(img)
                 after_image_path = add_image_name_path(after_image_path,"_character")
                 after_thumbnail_path = add_image_name_path(after_thumbnail_path,"_character")
             elif type_name == "Face":
                 # ここでFace_Trimmingの処理をする
-                await face_trimming(img,base_image_path,folder_name)
+                ft_setting = setting["Face_Trimming_Data"]
+                result_imgset = await face_trimming(img,base_image_path,folder_name,ft_setting)
                 after_image_path = add_image_name_path(after_image_path,"_face")
                 after_thumbnail_path = add_image_name_path(after_thumbnail_path,"_face")
             elif type_name == "Body":
                 # ここでBody_Trimmingの処理をする
+                bd_setting = setting["Body_Trimming_Data"]
+                result_imgset = await body_trimming(img,base_image_path,folder_name,bd_setting)
                 after_image_path = add_image_name_path(after_image_path,"_body")
                 after_thumbnail_path = add_image_name_path(after_thumbnail_path,"_body")
             
@@ -155,15 +170,16 @@ class Processing_Images:
                 # ここでResizeの処理をする
                 pass
 
-            img.save(after_image_path)
+            for index,im in enumerate(result_imgset):
+                print(f"{add_image_name_path(after_image_path,str(index).rjust(3, '0'))}======model")
+                im.save(add_image_name_path(after_image_path,str(index).rjust(3, '0')))
 
-            img.thumbnail((600,400))
+                im.thumbnail((600,400))
 
-            img.save(after_thumbnail_path,quality=50)
+                im.save(add_image_name_path(after_thumbnail_path,str(index).rjust(3, '0')),quality=50)
 
             return {"message":"OK!!!"}
         except Exception as e:
-            print(traceback.format_exc()) 
             return {"error":traceback.format_exc()}
         
     # テスト用処理
