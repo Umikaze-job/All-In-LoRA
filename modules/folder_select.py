@@ -7,6 +7,8 @@ import re
 import json
 from datetime import datetime
 from .folder_path import get_localhost_name, get_root_folder_path,get_savefiles
+from .class_definition.save_file_manager import SaveFileManager
+from .my_exception import DuplicateException
 import asyncio
 
 from pydantic import BaseModel
@@ -19,50 +21,6 @@ def get_thumbnail_name():
     formatted_date = now.strftime("%Y_%m_%d_%H%M%S") 
 
     return f'thumbnail_{formatted_date}.png'
-
-# setting.jsonを作成する。
-def create_setting_file(folder_path):
-    # setting.jsonの内容（適宜編集してください）
-    now = datetime.now()
-
-    # [年]_[月]_[日]_[時間] 形式の文字列を生成
-    formatted_date = now.strftime("%Y_%m_%d_%H%M%S") 
-    # データ内容
-    settings_data = {
-        "date":{
-            "Folder creation date": formatted_date
-        },
-        "taggingData":{"base":[],"after":[]},
-        "imageLearningSetting":{"image_items":{"base":[],"after":[]},"methods":[]},
-        "loraData":{}
-    }
-
-    # setting.jsonのパスを作成
-    setting_file_path = os.path.join(folder_path, "setting.json")
-
-    # setting.jsonを作成し、データを書き込む
-    with open(setting_file_path, 'w') as file:
-        json.dump(settings_data, file, indent=2)
-
-    print(f"Setting file created at: {setting_file_path}")
-
-# 新しいフォルダを作成する。
-def make_new_folders(folder_path):
-    folder_names = ["images_folder",
-                    "character_trimming_folder",
-                    "fine_tuning_folder",
-                    "output_folder",
-                    "thumbnail_folder",
-                    "text_folder",
-                    "BackUp"]
-    
-    for name in folder_names:
-        os.makedirs(os.path.join(folder_path,name))
-
-    os.makedirs(os.path.join(folder_path,"thumbnail_folder","base"))
-    os.makedirs(os.path.join(folder_path,"thumbnail_folder","after"))
-
-    os.makedirs(os.path.join(folder_path,"text_folder","face_detect"))
 
 def get_setting_json(folder_path):
     # setting.jsonのパスを作成
@@ -83,22 +41,6 @@ def get_setting_json(folder_path):
     except json.JSONDecodeError:
         print(f"Error decoding JSON in file: {setting_file_path}")
         return None
-
-# 指定したフォルダの中にサムネイルを作成する
-def make_thumbnail(target_folder:str):
-    # ソースフォルダとターゲットフォルダのパスを指定
-    source_folder = os.path.join(get_root_folder_path(),"assets")
-
-    # ソースフォルダ内のファイルリストを取得
-    files = os.listdir(source_folder)
-
-    # 'thumbnail_pre.png' を見つけてコピー
-    for file in files:
-        if file == 'thumbnail_pre.png': #! 'thumbnail_pre.png'という画像を元にサムネイルを生成
-            source_path = os.path.join(source_folder, file)
-            target_path = os.path.join(target_folder, get_thumbnail_name())
-            delete_thumbnails(target_folder)
-            shutil.copyfile(source_path, target_path)
 
 # 任意のフォルダの中にあるサムネイルのパスを取得する
 def get_thumbnail_path(folder_path):
@@ -127,21 +69,6 @@ def get_thumbnail_arr(folder_paths:[]):
 
     return thumbnail_paths
 
-# フォルダの中にあるサムネイルを削除する
-def delete_thumbnails(folder_path, pattern="thumbnail.*\.png"):
-    # フォルダ内のファイル一覧を取得
-    files = os.listdir(folder_path)
-
-    # 正規表現パターンをコンパイル
-    regex_pattern = re.compile(pattern)
-
-    # パターンにマッチするファイルを削除
-    for file in files:
-        if regex_pattern.match(file):
-            file_path = os.path.join(folder_path, file)
-            os.remove(file_path)
-            print(f"Deleted: {file_path}")
-
 # ファイル名の配列からファイルパスが入っている配列を作成する。
 def get_folder_paths_from_savefiles(filenames:[]):
 
@@ -169,26 +96,18 @@ class Folder_Select:
         try:
             data = await request.json()
             folder_name = data.get('name')
-            folder_path = os.path.join(get_savefiles(),folder_name)
-            if is_folder_exists(get_savefiles(),folder_name):
-                return {"Duplicate":"Duplicate names"}
-            else:
-                os.makedirs(folder_path, exist_ok=True)
-                make_thumbnail(folder_path)
-                create_setting_file(folder_path)
-                make_new_folders(folder_path)
-                return {"message": "Folder Created!!!"}
+            manager = SaveFileManager(folder_name)
+            manager.make_folder()
+            return {"message": "Folder Created!!!"}
+        except DuplicateException as e:
+            print(e)
+            return {"Duplicate":e}
         except Exception as e:
             return {"error":traceback.format_exc()}
     
     async def Get_Folders(request:Request):
         try:
-            dir_path = get_savefiles()
-            directories = list(filter(lambda f: os.path.isdir(os.path.join(dir_path, f)),os.listdir(dir_path)))
-
-            # 更新日時でソート
-            directories_sorted = sorted(directories, key=lambda f: get_setting_json(os.path.join(dir_path, f))["date"]["Folder creation date"], reverse=True)
-            return {"directoriesName":directories_sorted,"thumbnail":get_folder_paths_from_savefiles(directories_sorted)}
+            return SaveFileManager.get_savefiles_folder_list()
         except Exception as e:
             return {"error":traceback.format_exc()}
     

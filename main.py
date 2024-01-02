@@ -3,7 +3,7 @@ from fastapi.datastructures import Headers
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.params import Header
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse,StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
@@ -11,6 +11,11 @@ from modules.folder_select import Folder_Select
 from modules.processing_images import Processing_Images
 from modules.Make_TextFile import Make_TextFile
 from modules.Make_Lora import Make_Lora
+
+from asyncio import ProactorEventLoop, set_event_loop, ProactorEventLoop, get_event_loop
+from uvicorn import Config, Server
+
+import platform
 
 app = FastAPI()
 
@@ -104,6 +109,10 @@ async def Processing_Images_Start_Trimming(request:Request):
 async def Make_TextFile_Tagging(request:Request):
     return await Make_TextFile.Tagging02(request)
 
+@app.post("/api/make-textfile/tagging/clear_tagging_model")
+async def Make_TextFile_Clear_Tagging_Model(request:Request):
+    return await Make_TextFile.Clear_Tagging_Model(request)
+
 @app.post("/api/make-textfile/tagging/getdata")
 async def Make_TextFile_Tagging_GetData(request:Request):
     return await Make_TextFile.Tagging_GetData(request)
@@ -143,7 +152,7 @@ async def Make_Lora_Image_Items(request:Request):
 
 @app.post("/api/make-lora/press-start-lora")
 async def Make_Lora_Press_Start_Lora(request:Request):
-    return await Make_Lora.Press_Start_Lora(request)
+    return await Make_Lora.Press_Make_Command(request)
 
 @app.post("/api/make-lora/save-data")
 async def Make_Lora_Save_Data(request:Request):
@@ -157,3 +166,13 @@ async def Make_Lora_Sd_Model(request:Request):
 @app.post('/test/processing-images/delete-character_trimming_folder-images')
 async def delete_character_trimming_folder_file_Test(request:Request):
     return await Processing_Images.delete_character_trimming_folder_file_Test(request)
+
+@app.post("/test/make-lora/move-lora-file")
+async def Make_Lora_Test_Move_Files(request:Request):
+    return await Make_Lora.test_moveLoRa(request)
+
+if __name__ == "__main__" and platform.uname().system == "Windows":
+    #Windowsのみこのコマンドがないとsubprocessが使えない
+    set_event_loop(ProactorEventLoop())
+    server = Server(config=Config(app=app))
+    get_event_loop().run_until_complete(server.serve())

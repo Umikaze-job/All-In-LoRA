@@ -28,7 +28,7 @@ async def character_trimming(base_image:Image.Image,data) -> Image.Image:
     size = base_image.size
     alpha_box:tuple[int, int, int, int] = alpha_image.getbbox()
 
-    margin = data["margin"]
+    margin = data["spread"]
 
     # 座標を個別に取り出して演算
     left = max(0, int(alpha_box[0]) - margin)
