@@ -15,6 +15,16 @@ def test_Folder_Select_Create():
     })
     assert response.json() == {"message": "Folder Created!!!"}
 
+# pytest test_main.py -m folderselectrename -vv -s
+@pytest.mark.folderselectrename
+def test_Folder_Select_Rename():
+    response = client.post("/api/folder-select/rename",json={
+        "beforeName":"data04",
+        "afterName":"data05",
+    })
+    # assert response.json() == {"error":"Duplicate names"}
+    assert response.json() == {"message": "ok"}
+
 # processing-images 
 # start-trimming
 

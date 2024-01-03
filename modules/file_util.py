@@ -1,6 +1,6 @@
 import os
 import json
-from folder_path import get_root_folder_path
+from .folder_path import get_root_folder_path
 
 def get_user_setting_json():
     file_path = os.path.join(get_root_folder_path(),"user_setting.json")

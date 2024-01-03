@@ -1,6 +1,7 @@
 import shutil
 from fastapi import Request, UploadFile, Form, File
 import os
+import io
 
 from .gpu_modules.edit_images.body_trimming import body_trimming
 from .folder_path import get_savefiles,get_localhost_name,get_root_folder_path
@@ -14,6 +15,9 @@ import traceback
 from typing import List
 import re
 import math
+
+from .class_definition.image_folder_manager import ImageFolderManager
+from .class_definition.thumbnail_base_folder_manager import ThumbnailBaseFolderManager
 
 # 任意のフォルダの中にある画像ファイルの名前のリスト
 def get_images_list(folder_path:str):
@@ -44,38 +48,53 @@ class Processing_Images:
         try:
             data = await request.json()
             folder_name = data.get('folderName')
-            image_paths,_ = get_savefile_image_url_paths(folder_name)
-            thumbnail_paths,_ = get_thumbnail_url_paths(folder_name)
+            image_manager = ImageFolderManager(folder_name)
+            base_manager = ThumbnailBaseFolderManager(folder_name)
 
-            return {"data_paths": image_paths,"thumbnail_path":thumbnail_paths}
+            data_paths = image_manager.get_all_url_paths()
+            thumbnail_path = base_manager.get_all_url_paths()
+
+            return {"data_paths": data_paths,"thumbnail_path":thumbnail_path}
         except Exception as e:
             return {"error":traceback.format_exc()}
     # 画像をフォルダに追加する処理
-    async def Set_Input_Images(file: UploadFile = File(...),folderName:str = Form(...)):
+    async def Set_Input_Images(file: UploadFile = File(...),folder_name:str = Form(...)):
         try:
+            content = await file.read()
+
+            img_bin = io.BytesIO(content)
+            image = Image.open(img_bin)
+            print(image)
+            image.show()
+
+            await file.close()
+            # image_manager = ImageFolderManager(folder_name)
+            # base_manager = ThumbnailBaseFolderManager(folder_name)
+            # image_manager.Input_Image(file)
+            # base_manager.Input_Image(file)
             # 画像を追加する
-            upload_path = os.path.join(get_savefiles(),folderName,"images_folder", file.filename)
-            with open(upload_path, "wb") as buffer:
-                shutil.copyfileobj(file.file, buffer)
+            # upload_path = os.path.join(get_savefiles(),folderName,"images_folder", file.filename)
+            # with open(upload_path, "wb") as buffer:
+            #     shutil.copyfileobj(file.file, buffer)
 
-            file_name, extension = os.path.splitext(upload_path)
-            thumbnail_path = os.path.join(get_savefiles(),folderName,"thumbnail_folder","base", file.filename)
-            if extension != ".webp":
-                image = Image.open(upload_path).convert("RGBA")
-                image.save(file_name + ".webp", "webp")
+            # file_name, extension = os.path.splitext(upload_path)
+            # thumbnail_path = os.path.join(get_savefiles(),folderName,"thumbnail_folder","base", file.filename)
+            # if extension != ".webp":
+            #     image = Image.open(upload_path).convert("RGBA")
+            #     image.save(file_name + ".webp", "webp")
 
-                os.remove(upload_path)
+            #     os.remove(upload_path)
 
-                image.thumbnail((600,400))
+            #     image.thumbnail((600,400))
 
-                thumbnail_folder,_ = os.path.splitext(thumbnail_path)
-                image.save(thumbnail_folder + ".webp",quality=50,format="webp")
-            else:
-                image = Image.open(upload_path).convert("RGBA")
+            #     thumbnail_folder,_ = os.path.splitext(thumbnail_path)
+            #     image.save(thumbnail_folder + ".webp",quality=50,format="webp")
+            # else:
+            #     image = Image.open(upload_path).convert("RGBA")
 
-                image.thumbnail((600,400))
+            #     image.thumbnail((600,400))
 
-                image.save(thumbnail_path,quality=50,format="webp")
+            #     image.save(thumbnail_path,quality=50,format="webp")
 
             return {"message": "OK"}
         except Exception as e:

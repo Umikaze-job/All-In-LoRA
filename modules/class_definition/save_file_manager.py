@@ -6,6 +6,10 @@ import shutil
 from ..my_exception import DuplicateException
 from ..folder_path import get_root_folder_path,get_localhost_name
 from ..file_util import get_setting_file_json
+import glob
+from PIL import Image
+from fastapi import UploadFile, Form, File
+import io
 
 """
 SaveFileManager:savefiles/<fileName>に関する処理をするクラス
@@ -14,45 +18,85 @@ SaveFileManager:savefiles/<fileName>に関する処理をするクラス
 class SaveFileManager:
     def __init__(self,folder_name):
         print(get_root_folder_path())
-        self.__folder_path = os.path.join(get_root_folder_path(),"savefiles",folder_name)
+        self.__savefile_path = os.path.join(get_root_folder_path(),"savefiles")
+        self.__folder_path = os.path.join(self.__savefile_path,folder_name)
         self.__folder_name = folder_name
 
+    # 初期フォルダを作成する
     def make_folder(self):
-        if self.__is_folder_exists():
+        if self.__is_folder_exists(self.__folder_name):
             raise DuplicateException()
         else:
             os.makedirs(self.__folder_path, exist_ok=True)
-            self.make_thumbnail()
+            self.__make_thumbnail()
             self.__create_setting_file()
             self.__make_new_folders()
 
+    # サムネイルを変更する
+    async def remake_thumbnail(self,image: UploadFile = File()):
+        # ファイルを指定したフォルダに保存
+        save_path = os.path.join(self.__folder_path, self.__get_thumbnail_name())
+        #既存のサムネイル画像を削除する
+        # self.__delete_thumbnails()
+
+        content = await image.read()
+
+        img_bin = io.BytesIO(content)
+        image = Image.open(img_bin)
+        print(image)
+        image.show()
+        
+        # with open(save_path, "wb") as buffer:
+        #     shutil.copyfileobj(image.file, buffer)
+
+    # フォルダの名前を変更する
+    def rename_folder(self,after_name):
+        if self.__is_folder_exists(after_name):
+            raise DuplicateException()
+        
+        old_path = self.__folder_path
+        # 新しい名前のパスを生成
+        new_path = os.path.join(self.__savefile_path,after_name)
+        
+        # フォルダの名前を変更
+        os.rename(old_path, new_path)
+
+    # フォルダを削除する
+    def delete_folder(self):
+        shutil.rmtree(self.__folder_path)
+
+    #? private
     # 指定したフォルダの中にサムネイルを作成する
-    def make_thumbnail(self):
+    def __make_thumbnail(self):
         #既存のサムネイル画像を削除する
         self.__delete_thumbnails()
         # ソースフォルダとターゲットフォルダのパスを指定
-        source_thunbnail_path = os.path.join(get_root_folder_path(),"assets",self.__get_thumbnail_name())
+        source_thunbnail_path = os.path.join(get_root_folder_path(),"assets","thumbnail_pre.png")
 
         if os.path.isfile(source_thunbnail_path):
-            shutil.copy(source_thunbnail_path,os.path.join(get_root_folder_path(),"savefiles"))
+            image = Image.open(source_thunbnail_path)
+            image.save(os.path.join(self.__folder_path,self.__get_thumbnail_name()))
 
-    def __is_folder_exists(self):
+    # 指定した名前のフォルダは存在するかどうか
+    def __is_folder_exists(self,input_name):
         save_files_folders = os.path.join(get_root_folder_path(),"savefiles")
 
-        return any([name == self.__folder_name for name in os.listdir(save_files_folders)])
+        return any([name == input_name for name in os.listdir(save_files_folders)])
 
     # setting.jsonを作成する。
     def __create_setting_file(self):
+        now = datetime.datetime.now()
+        # [年]_[月]_[日]_[時間] 形式の文字列を生成
+        date = now.strftime("%Y_%m_%d_%H%M%S") 
         # データ内容
         settings_data = {
             "date":{
-                "Folder creation date": self.__get_formatted_date
+                "Folder creation date": date
             },
             "taggingData":{"base":[],"after":[]},
             "imageLearningSetting":{"image_items":{"base":[],"after":[]},"methods":[]},
             "loraData":{}
         }
-
         # setting.jsonのパスを作成
         setting_file_path = os.path.join(self.__folder_path, "setting.json")
 
@@ -81,8 +125,12 @@ class SaveFileManager:
         os.makedirs(os.path.join(self.__folder_path,"text_folder","face_detect"))
 
     def __get_thumbnail_name(self):
+        now = datetime.datetime.now()
 
-        return f'thumbnail_{self.__get_formatted_date}.png'
+        # [年]_[月]_[日]_[時間] 形式の文字列を生成
+        date = now.strftime("%Y_%m_%d_%H%M%S") 
+
+        return f'thumbnail_{date}.png'
     
     # フォルダの中にあるサムネイルを削除する
     def __delete_thumbnails(self):
@@ -91,14 +139,6 @@ class SaveFileManager:
 
         for thumb in thumbnail_name:
             os.remove(os.path.join(self.__folder_path, thumb))
-
-    #フォーマットされた日にちを取得する
-    def __get_formatted_date():
-                    # 現在の日時を取得
-        now = datetime.datetime.now()
-
-        # [年]_[月]_[日]_[時間] 形式の文字列を生成
-        return now.strftime("%Y_%m_%d_%H%M%S") 
 
     #指定した名前のフォルダが存在するかどうか
     @staticmethod
@@ -115,7 +155,15 @@ class SaveFileManager:
 
         # 更新日時でソート
         directories_sorted = sorted(directories, key=lambda name: get_setting_file_json(name)["date"]["Folder creation date"], reverse=True)
-        thumbnail_paths = list(map(lambda name:os.path.join(get_localhost_name(),"savefiles",name),directories_sorted))
+
+        def get_path(name):
+            file_names = glob.glob(os.path.join(get_root_folder_path(),"savefiles",name,"thumbnail*.png"))
+            if len(file_names) == 0:
+                raise Exception(f"Thumbnail image is missing")
+            
+            return os.path.join(get_localhost_name(),"savefiles",name,os.path.basename(file_names[0]))
+
+        thumbnail_paths = list(map(get_path,directories_sorted))
         return {"directoriesName":directories_sorted,"thumbnail":thumbnail_paths}
     
     
