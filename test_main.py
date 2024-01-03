@@ -33,7 +33,7 @@ def test_Folder_Select_Rename():
 def test_Start_Trimming_Test():
     response = client.post("/api/processing-images/start-trimming",json={
         "folderName": "data02",
-        "fileName": "blue_archive06.webp",
+        "fileName": "blue_archive04.webp",
         "setting": {
             "Character_Trimming_Data": {
                 "modelname": "isnet-anime",
@@ -71,7 +71,8 @@ def test_Start_Trimming_Test():
 #pytest -m delete_character_trimming_folder_images -vv
 @pytest.mark.delete_character_trimming_folder_images
 def test_delete_character_trimming_folder_images():
-    response = client.post('/test/processing-images/delete-character_trimming_folder-images',json={"folderName": "data01"})
+    response = client.post('/test/processing-images/delete-character_trimming_folder-images',
+                           json={"folderName": "data02"})
     assert response.json() == {"message":"OK!!!"}
 
 # pytest test_main.py -m tagging -vv -s

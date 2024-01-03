@@ -18,6 +18,8 @@ import math
 
 from .class_definition.image_folder_manager import ImageFolderManager
 from .class_definition.thumbnail_base_folder_manager import ThumbnailBaseFolderManager
+from .class_definition.character_trimming_folder_manager import CharacterTrimmingFolderManager
+from .class_definition.thumbnail_after_folder_manager import ThumbnailAfterFolderManager
 
 # 任意のフォルダの中にある画像ファイルの名前のリスト
 def get_images_list(folder_path:str):
@@ -60,41 +62,19 @@ class Processing_Images:
     # 画像をフォルダに追加する処理
     async def Set_Input_Images(file: UploadFile = File(...),folder_name:str = Form(...)):
         try:
+            image_manager = ImageFolderManager(folder_name)
+            base_manager = ThumbnailBaseFolderManager(folder_name)
+
+            # 画像ファイルと名前を取得する
+            # UploadFileからの画像の読み込みは1回しかできない
             content = await file.read()
+            file_name = file.filename
 
             img_bin = io.BytesIO(content)
-            image = Image.open(img_bin)
-            print(image)
-            image.show()
+            image = Image.open(img_bin).convert("RGBA")
 
-            await file.close()
-            # image_manager = ImageFolderManager(folder_name)
-            # base_manager = ThumbnailBaseFolderManager(folder_name)
-            # image_manager.Input_Image(file)
-            # base_manager.Input_Image(file)
-            # 画像を追加する
-            # upload_path = os.path.join(get_savefiles(),folderName,"images_folder", file.filename)
-            # with open(upload_path, "wb") as buffer:
-            #     shutil.copyfileobj(file.file, buffer)
-
-            # file_name, extension = os.path.splitext(upload_path)
-            # thumbnail_path = os.path.join(get_savefiles(),folderName,"thumbnail_folder","base", file.filename)
-            # if extension != ".webp":
-            #     image = Image.open(upload_path).convert("RGBA")
-            #     image.save(file_name + ".webp", "webp")
-
-            #     os.remove(upload_path)
-
-            #     image.thumbnail((600,400))
-
-            #     thumbnail_folder,_ = os.path.splitext(thumbnail_path)
-            #     image.save(thumbnail_folder + ".webp",quality=50,format="webp")
-            # else:
-            #     image = Image.open(upload_path).convert("RGBA")
-
-            #     image.thumbnail((600,400))
-
-            #     image.save(thumbnail_path,quality=50,format="webp")
+            await image_manager.Input_Image(image,file_name)
+            await base_manager.Input_Image(image,file_name)
 
             return {"message": "OK"}
         except Exception as e:
@@ -105,9 +85,13 @@ class Processing_Images:
         try:
             data = await request.json()
             filename = data.get('fileName')
-            folderName = data.get('folderName')
-            os.remove(os.path.join(get_savefiles(),folderName,"images_folder",filename))
-            os.remove(os.path.join(get_savefiles(),folderName,"thumbnail_folder","base",filename))
+            folder_name = data.get('folderName')
+
+            image_manager = ImageFolderManager(folder_name)
+            base_manager = ThumbnailBaseFolderManager(folder_name)
+
+            image_manager.delete_file(filename)
+            base_manager.delete_file(filename)
             return {"message":f"File Deleted"}
         except Exception as e:
             return {"error":traceback.format_exc()}
@@ -117,8 +101,12 @@ class Processing_Images:
         try:
             data = await request.json()
             folder_name = data.get('folderName')
-            _,image_paths = get_savefile_image_url_paths(folder_name)
-            _,thumbnail_paths  = get_thumbnail_url_paths(folder_name)
+
+            character_trimming_manager = CharacterTrimmingFolderManager(folder_name)
+            after_manager = ThumbnailAfterFolderManager(folder_name)
+
+            image_paths = character_trimming_manager.get_all_url_paths()
+            thumbnail_paths  = after_manager.get_all_url_paths()
 
             return {"data_paths": image_paths,"thumbnail_path":thumbnail_paths}
         except Exception as e:
@@ -130,12 +118,12 @@ class Processing_Images:
         folder_name = data.get('folderName')
         file_name = data.get('fileName')
 
-        file_path = os.path.join(get_savefiles(),folder_name,"character_trimming_folder",file_name)
-        thumbnail_path = os.path.join(get_savefiles(),folder_name,"thumbnail_folder","after",file_name)
-
         try:
-            os.remove(file_path)
-            os.remove(thumbnail_path)
+            character_trimming_manager = CharacterTrimmingFolderManager(folder_name)
+            after_manager = ThumbnailAfterFolderManager(folder_name)
+
+            character_trimming_manager.delete_file(file_name)
+            after_manager.delete_file(file_name)
 
             return {"message":"OK!!"}
         except FileNotFoundError:
@@ -196,83 +184,69 @@ class Processing_Images:
                 after_image_path = add_image_name_path(after_image_path,"_body")
                 after_thumbnail_path = add_image_name_path(after_thumbnail_path,"_body")
             
-            if is_resize == True:
-                #リサイズ処理
-                temp_path = os.path.join(get_savefiles(),folder_name,"character_trimming_folder","temp")
-                os.makedirs(temp_path,exist_ok=True)
-
-                for index,im in enumerate(result_imgset):
-                    # 拡大する倍率を決める
-                    im_width,im_height = im.size
-                    re_setting = setting["Resize"]
-
-                    print(f"WIDTH,HEIGHT:{im_width},{im_height}")
-                    print(f"LENGTH_SIDE:{re_setting['lengthSide'] * 2}")
-                    side01 = re_setting["lengthSide"] * 2
-                    side02 = im_width + im_height
-                    rate = side01 / side02
-                    print(f"RATE:{rate}")
-                    rate = min(re_setting["rateLimitation"],round(rate))
-                    
-                    #倍率が1以外なら拡大する
-                    if rate > 1:
-                        tamp_file_name = add_image_name_path(os.path.join(temp_path,os.path.basename(after_image_path)),str(index).rjust(3, '0'))
-                        im.save(tamp_file_name)
-                        # 外部ファイルのrembgで拡大する
-                        cmd = ["python",f"{os.path.join(get_root_folder_path(),'tools','Real-ESRGAN','inference_realesrgan.py')}",
-                                    "-i",tamp_file_name,
-                                    "-o",temp_path,
-                                    "-n","RealESRGAN_x4plus_anime_6B",
-                                    "-s",str(rate)]
-                        print(" ".join(cmd))
-                        proc = await asyncio.create_subprocess_shell(
-                            " ".join(cmd),
-                            stdout=asyncio.subprocess.PIPE,
-                            stderr=asyncio.subprocess.PIPE)
-                        
-                        # while True:
-                        #     print(f"RETURN_CODE:{proc.returncode}")
-
-                        #     if proc.stdout.at_eof() and proc.stderr.at_eof():
-                        #         print("Break!!!!")
-                        #         break
-                        #     stdout = (await proc.stdout.readline()).decode()
-                        #     if stdout:
-                        #         print(f"STDOUT:{stdout}") 
-                        #     stderr = (await proc.stderr.readline()).decode()
-                        #     if stderr:
-                        #         print(stderr) 
-
-                        #     await asyncio.sleep(0.2)
-
-                        await proc.wait()
-
-                        print(os.path.join(get_root_folder_path(),'tools','Real-ESRGAN','inference_realesrgan.py'))
-
-                        resize_path = add_image_name_path(tamp_file_name,"_out")
-                        # 画像をCharacter_trimming_folderに移して、サムネイルを作成する
-                        resize_image = Image.open(resize_path)
-                        resize_image.save(os.path.join(get_savefiles(),folder_name,"character_trimming_folder",image_name_change_to_resize(resize_path)))
-                        
-                        resize_image.thumbnail((600,400))
-
-                        resize_image.save(os.path.join(get_savefiles(),folder_name,"thumbnail_folder","after",image_name_change_to_resize(resize_path)),quality=50)
-                    #倍率が1なら
-                    else:
-                        im.save(add_image_name_path(after_image_path,str(index).rjust(3, '0')))
-
-                        im.thumbnail((600,400))
-
-                        im.save(add_image_name_path(after_thumbnail_path,str(index).rjust(3, '0')),quality=50)
-
-                shutil.rmtree(temp_path)
-            else:
+            # リサイズをする必要がないときは
+            if is_resize == False:
                 for index,im in enumerate(result_imgset):
                     im.save(add_image_name_path(after_image_path,str(index).rjust(3, '0')))
 
                     im.thumbnail((600,400))
 
                     im.save(add_image_name_path(after_thumbnail_path,str(index).rjust(3, '0')),quality=50)
+
+                    return {"message":"OK!!!"}
+            
+            #リサイズ処理
+            temp_path = os.path.join(get_savefiles(),folder_name,"character_trimming_folder","temp")
+            os.makedirs(temp_path,exist_ok=True)
+
+            for index,im in enumerate(result_imgset):
+                # 拡大する倍率を決める
+                im_width,im_height = im.size
+                re_setting = setting["Resize"]
+
+                print(f"WIDTH,HEIGHT:{im_width},{im_height}")
+                print(f"LENGTH_SIDE:{re_setting['lengthSide'] * 2}")
+                side01 = re_setting["lengthSide"] * 2
+                side02 = im_width + im_height
+                rate = side01 / side02
+                print(f"RATE:{rate}")
+                rate = min(re_setting["rateLimitation"],round(rate))
+                
+                #倍率が1以下なら普通に保存する
+                if rate <= 1:
+                    im.save(add_image_name_path(after_image_path,str(index).rjust(3, '0')))
+                    im.thumbnail((600,400))
+                    im.save(add_image_name_path(after_thumbnail_path,str(index).rjust(3, '0')),quality=50)
+                    continue
+
+                tamp_file_name = add_image_name_path(os.path.join(temp_path,os.path.basename(after_image_path)),str(index).rjust(3, '0'))
+                im.save(tamp_file_name)
+                # 外部ファイルのrembgで拡大する
+                cmd = ["python",f"{os.path.join(get_root_folder_path(),'tools','Real-ESRGAN','inference_realesrgan.py')}",
+                            "-i",tamp_file_name,
+                            "-o",temp_path,
+                            "-n","RealESRGAN_x4plus_anime_6B",
+                            "-s",str(rate)]
+                print(" ".join(cmd))
+                proc = await asyncio.create_subprocess_shell(
+                    " ".join(cmd),
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE)
+
+                await proc.wait()
+
+                print(os.path.join(get_root_folder_path(),'tools','Real-ESRGAN','inference_realesrgan.py'))
+
+                resize_path = add_image_name_path(tamp_file_name,"_out")
+                # 画像をCharacter_trimming_folderに移して、サムネイルを作成する
+                resize_image = Image.open(resize_path)
+                resize_image.save(os.path.join(get_savefiles(),folder_name,"character_trimming_folder",image_name_change_to_resize(resize_path)))
+                
+                resize_image.thumbnail((600,400))
+
+                resize_image.save(os.path.join(get_savefiles(),folder_name,"thumbnail_folder","after",image_name_change_to_resize(resize_path)),quality=50)
+
+            shutil.rmtree(temp_path)
 
             return {"message":"OK!!!"}
         except Exception as e:

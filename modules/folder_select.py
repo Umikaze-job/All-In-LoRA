@@ -16,7 +16,7 @@ class Folder_Select:
             return {"error":"Duplicate names"}
         except Exception as e:
             return {"error":traceback.format_exc()}
-    
+    # フォルダ取得
     async def Get_Folders(request:Request):
         try:
             return SaveFileManager.get_savefiles_folder_list()

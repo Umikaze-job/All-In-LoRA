@@ -37,17 +37,13 @@ class SaveFileManager:
         # ファイルを指定したフォルダに保存
         save_path = os.path.join(self.__folder_path, self.__get_thumbnail_name())
         #既存のサムネイル画像を削除する
-        # self.__delete_thumbnails()
+        self.__delete_thumbnails()
 
         content = await image.read()
-
         img_bin = io.BytesIO(content)
-        image = Image.open(img_bin)
-        print(image)
-        image.show()
-        
-        # with open(save_path, "wb") as buffer:
-        #     shutil.copyfileobj(image.file, buffer)
+        image = Image.open(img_bin).convert("RGBA")
+        image.thumbnail((600,400))
+        image.save(save_path)
 
     # フォルダの名前を変更する
     def rename_folder(self,after_name):

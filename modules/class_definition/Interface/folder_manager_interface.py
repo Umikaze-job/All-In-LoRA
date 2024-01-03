@@ -3,6 +3,7 @@ import glob
 from fastapi import Request, UploadFile, Form, File
 import shutil
 from PIL import Image
+import io
 
 """
 FolderManagerParent:画像フォルダの処理をするクラスの親クラス
@@ -24,9 +25,8 @@ class FolderManagerParent:
         return list(map(lambda name:os.path.join(self.url_path,name),all_files_name))
     
     # 画像をフォルダに追加する
-    def Input_Image(self,file: UploadFile = File(...)) -> str:
-        upload_path = os.path.join(self.folder_path, file.filename)
-        with open(upload_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+    async def Input_Image(self):
+        pass
 
-        return upload_path
+    def delete_file(self,file_name):
+        os.remove(os.path.join(self.folder_path,file_name))

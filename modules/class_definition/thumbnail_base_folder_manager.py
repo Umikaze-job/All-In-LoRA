@@ -5,10 +5,11 @@ from .Interface.folder_manager_interface import FolderManagerParent
 from fastapi import Request, UploadFile, Form, File
 import shutil
 from PIL import Image
+import io
 
 """
 ThumbnailBaseFolderManager:savefiles/<fileName>/thumbnail_folder/baseの処理や別のフォルダに画像をコピーする処理をする
-images_folderはデータベースの画像を置くフォルダである
+thumbnail_folder/baseはデータベースの画像のサムネイルを置くフォルダである
 """
 class ThumbnailBaseFolderManager(FolderManagerParent):
 
@@ -17,16 +18,11 @@ class ThumbnailBaseFolderManager(FolderManagerParent):
         url_path = os.path.join(get_localhost_name(),"savefiles",folder_name,"thumbnail_folder","base")
         super().__init__(folder_name,folder_path,url_path)
 
-    def Input_Image(self,file: UploadFile = File(...)):
-        # 画像を追加する
-        upload_path = super().Input_Image(file)
+    def get_all_url_paths(self):
+        return super().get_all_url_paths()
 
+    async def Input_Image(self,image:Image.Image,file_name:str):
         #webpファイルに変える
-        if os.path.basename(upload_path).endswith(".webp") == True:
-            return None
-        
-        file_name = os.path.splitext(os.path.basename(upload_path))[0]
-        print(f"UPLOAD_PATH: {upload_path}")
-        image = Image.open(upload_path).convert("RGBA")
+        my_file_name = os.path.splitext(os.path.basename(file_name))[0]
         image.thumbnail((600,400))
-        image.save(os.path.join(os.path.dirname(upload_path),f"{file_name}.webp"),format="webp",quality=50)
+        image.save(os.path.join(self.folder_path,f"{my_file_name}.webp"),format="webp",quality=50)
