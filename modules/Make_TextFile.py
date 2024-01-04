@@ -7,69 +7,12 @@ import os
 from .gpu_modules.tagging import ready_model,do_tagging
 from PIL import Image
 
+from .class_definition.image_folder_manager import ImageFolderManager
+from .class_definition.character_trimming_folder_manager import CharacterTrimmingFolderManager
+
 Tagging_Model = None
 
 class Make_TextFile:
-    async def Tagging(request:Request):
-        try:
-            data = await request.json()
-            tagging_data = data.get('taggingData')
-            folder_name = data.get('folderName')
-
-            json_data = get_setting_file_json(folder_name)
-            if "taggingData" not in json_data:
-                json_data["taggingData"] = {"base":[],"after":[]}
-                write_setting_file_json(folder_name,json_data)
-
-            # item--画像のurlパス ここでtaggingする
-            for item in tagging_data['base']:
-                # URLからファイル名を取得
-                filename = os.path.basename(item)
-
-                # すでにjson_data["taggingData"]["base"]["image_name"]に同じファイル名が存在するとき
-                if any(d.get("image_name") == filename for d in json_data["taggingData"]["base"]):
-                    for data in json_data["taggingData"]["base"]:
-                        if data["image_name"] == filename:
-                            data["tag"] = make_random_tags(10) #タグを指定
-                else:
-                    tag = make_random_tags(10) #タグを指定
-
-                    json_data["taggingData"]["base"].append({"image_name":filename,"tag":tag})
-
-            for item in tagging_data['after']:
-                # URLからファイル名を取得
-                filename = os.path.basename(item)
-
-                # すでにjson_data["taggingData"]["after"]["image_name"]に同じファイル名が存在するとき
-                if any(d.get("image_name") == filename for d in json_data["taggingData"]["after"]):
-                    for data in json_data["taggingData"]["after"]:
-                        if data["image_name"] == filename:
-                            data["tag"] = make_random_tags(10) #タグを指定
-                else:
-                    tag = make_random_tags(10) #タグを指定
-
-                    json_data["taggingData"]["after"].append({"image_name":filename,"tag":tag})
-
-            for item in tagging_data['deleteBase']:
-                # URLからファイル名を取得
-                filename = os.path.basename(item)
-                
-                json_data["taggingData"]["base"] = list(filter(lambda item: item.get("image_name") != filename, json_data["taggingData"]["base"]))
-
-            for item in tagging_data['deleteAfter']:
-                # URLからファイル名を取得
-                filename = os.path.basename(item)
-                
-                json_data["taggingData"]["after"] = list(filter(lambda item: item.get("image_name") != filename, json_data["taggingData"]["after"]))
-
-
-            write_setting_file_json(folder_name,json_data)
-
-            return {"message":"File Tagged!!"}
-        
-        except Exception as e:
-            return {"error": traceback.format_exc()}
-        
     async def Tagging02(request:Request):
         try:
             data = await request.json()
@@ -77,48 +20,22 @@ class Make_TextFile:
             folder_name = data.get('folderName')
             type_name = data.get('type')
 
-            json_data = get_setting_file_json(folder_name)
-
             global Tagging_Model
             if Tagging_Model == None:
-                print("No Model")
                 Tagging_Model = ready_model("wd-v1-4-vit-tagger-v2.onnx")
-            else:
-                print("Yes Model")
 
             if type_name == "base":
-                file_path = os.path.join(get_savefiles(),folder_name,"images_folder",file_name)
-                image = Image.open(file_path)
-                # json_data["taggingData"]["base"]["image_name"]の値がfile_nameと同じ名前の連想配列があるとき
-                if any(file_name == item.get('image_name') for item in json_data["taggingData"]["base"]):
-                    rensou = [item for item in json_data["taggingData"]["base"] if item.get('image_name') == file_name]
-                    rensou[0]["tag"] = await do_tagging(image,Tagging_Model) #タグを指定
-                else:
-                    tag = await do_tagging(image,Tagging_Model) #タグを指定
-                    json_data["taggingData"]["base"].append({"image_name":file_name,"tag":tag})
+                manager = ImageFolderManager(folder_name)
+                await manager.tags_generate(file_name,Tagging_Model)
             elif type_name == "after":
-                file_path = os.path.join(get_savefiles(),folder_name,"images_folder",file_name)
-                # json_data["taggingData"]["after"]["image_name"]の値がfile_nameと同じ名前の連想配列があるとき
-                if any(file_name == item.get('image_name') for item in json_data["taggingData"]["after"]):
-                    rensou = [item for item in json_data["taggingData"]["after"] if item.get('image_name') == file_name]
-                    rensou[0]["tag"] = await do_tagging(image,Tagging_Model) #タグを指定
-                else:
-                    tag = await do_tagging(image,Tagging_Model) #タグを指定
-                    json_data["taggingData"]["after"].append({"image_name":file_name,"tag":tag})
+                manager = CharacterTrimmingFolderManager(folder_name)
+                await manager.tags_generate(file_name,Tagging_Model)
             elif type_name == "deleteBase":
-                # json_data["taggingData"]["base"]["image_name"]の値がfile_nameと同じ名前の連想配列があるとき
-                if any(file_name == item.get('image_name') for item in json_data["taggingData"]["base"]):
-                    rensou = [item for item in json_data["taggingData"]["base"] if item.get('image_name') == file_name]
-                    if rensou[0].get("tag") != None:
-                        rensou[0]["tag"] = [""]
+                manager = ImageFolderManager(folder_name)
+                manager.tags_delete(file_name)
             elif type_name == "deleteAfter":
-                # json_data["taggingData"]["after"]["image_name"]の値がfile_nameと同じ名前の連想配列があるとき
-                if any(file_name == item.get('image_name') for item in json_data["taggingData"]["after"]):
-                    rensou = [item for item in json_data["taggingData"]["after"] if item.get('image_name') == file_name]
-                    if rensou[0].get("tag") != None:
-                        rensou[0]["tag"] = [""]
-
-            write_setting_file_json(folder_name,json_data)
+                manager = CharacterTrimmingFolderManager(folder_name)
+                manager.tags_delete(file_name)
 
             return {"message":"OK!!!"}
         except Exception as e:

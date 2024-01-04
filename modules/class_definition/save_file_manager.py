@@ -89,8 +89,9 @@ class SaveFileManager:
             "date":{
                 "Folder creation date": date
             },
-            "taggingData":{"base":[],"after":[]},
-            "imageLearningSetting":{"image_items":{"base":[],"after":[]},"methods":[]},
+            # "base","after"の各要素の中身:{"file_name":"","tags":"","caption":"","method":""}
+            "Image_Data":{"base":[],"after":[]},
+            "LearningMethods":[],
             "loraData":{}
         }
         # setting.jsonのパスを作成

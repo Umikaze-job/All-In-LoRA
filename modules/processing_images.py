@@ -237,9 +237,15 @@ class Processing_Images:
 
                 print(os.path.join(get_root_folder_path(),'tools','Real-ESRGAN','inference_realesrgan.py'))
 
-                resize_path = add_image_name_path(tamp_file_name,"_out")
+                resize_path = add_image_name_path(f"{os.path.join(os.path.dirname(tamp_file_name),os.path.splitext(os.path.basename(tamp_file_name))[0])}.webp","_out")
+                # リサイズされた画像を取得する
+                out_resize_path = glob.glob(os.path.join(os.path.dirname(resize_path),"**"))
+                out_resize_path = list(filter(lambda path:re.match(r'.*_out\.(webp|png)$', path) != None,out_resize_path))
+                if len(out_resize_path) == 0:
+                    raise Exception("画像が消滅しました。")
+                out_resize_path = out_resize_path[0]
                 # 画像をCharacter_trimming_folderに移して、サムネイルを作成する
-                resize_image = Image.open(resize_path)
+                resize_image = Image.open(out_resize_path)
                 resize_image.save(os.path.join(get_savefiles(),folder_name,"character_trimming_folder",image_name_change_to_resize(resize_path)))
                 
                 resize_image.thumbnail((600,400))
