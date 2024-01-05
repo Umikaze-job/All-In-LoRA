@@ -1,5 +1,6 @@
 from fastapi.testclient import TestClient
 import pytest
+from typing import Any
 
 from main import app
 
@@ -9,7 +10,7 @@ client = TestClient(app)
 
 # pytest test_main.py -m folderselectcreate -vv -s
 @pytest.mark.folderselectcreate
-def test_Folder_Select_Create():
+def test_Folder_Select_Create() -> Any:
     response = client.post("/api/folder-select/create",json={
         "name":"data04",
     })
@@ -17,7 +18,7 @@ def test_Folder_Select_Create():
 
 # pytest test_main.py -m folderselectrename -vv -s
 @pytest.mark.folderselectrename
-def test_Folder_Select_Rename():
+def test_Folder_Select_Rename() -> Any:
     response = client.post("/api/folder-select/rename",json={
         "beforeName":"data04",
         "afterName":"data05",
@@ -30,7 +31,7 @@ def test_Folder_Select_Rename():
 
 # pytest test_main.py -m trimming -vv -s
 @pytest.mark.trimming
-def test_Start_Trimming_Test():
+def test_Start_Trimming_Test() -> Any:
     response = client.post("/api/processing-images/start-trimming",json={
         "folderName": "data04",
         "fileName": "derestefeet05.webp",
@@ -70,14 +71,14 @@ def test_Start_Trimming_Test():
 
 #pytest -m delete_character_trimming_folder_images -vv
 @pytest.mark.delete_character_trimming_folder_images
-def test_delete_character_trimming_folder_images():
+def test_delete_character_trimming_folder_images() -> Any:
     response = client.post('/test/processing-images/delete-character_trimming_folder-images',
                            json={"folderName": "data02"})
     assert response.json() == {"message":"OK!!!"}
 
 # pytest test_main.py -m tagging -vv -s
 @pytest.mark.tagging
-def test_Tagging_Test():
+def test_Tagging_Test() -> Any:
     response = client.post("/api/make-textfile/tagging/write",json={
         "folderName":"data04",
         "fileName":"derestefeet03_body000_resize.webp",
@@ -87,7 +88,7 @@ def test_Tagging_Test():
 
 # pytest test_main.py -m presslora -vv -s
 @pytest.mark.presslora
-def test_Press_Lora_Test():
+def test_Press_Lora_Test() -> Any:
     response = client.post("/api/make-lora/press-start-lora",json={
         "folderName":"data03",
     })
@@ -95,7 +96,7 @@ def test_Press_Lora_Test():
 
 # pytest test_main.py -m makeloramovefile -vv -s
 @pytest.mark.makeloramovefile
-def test_Lora_Move_File():
+def test_Lora_Move_File() -> Any:
     response = client.post("/test/make-lora/move-lora-file",json={
         "folderName":"data03",
         "loraName":"test01"

@@ -2,10 +2,12 @@ import traceback
 from fastapi import Request, UploadFile, Form
 from .class_definition.save_file_manager import SaveFileManager
 from .my_exception import DuplicateException
+from typing import Any
 
 class Folder_Select:
     # フォルダ作成
-    async def Create(request:Request):
+    @staticmethod
+    async def Create(request:Request) -> dict[str,Any]:
         try:
             data = await request.json()
             folder_name = data.get('name')
@@ -17,14 +19,16 @@ class Folder_Select:
         except Exception as e:
             return {"error":traceback.format_exc()}
     # フォルダ取得
-    async def Get_Folders(request:Request):
+    @staticmethod
+    async def Get_Folders(request:Request) -> dict[str,Any]:
         try:
             return SaveFileManager.get_savefiles_folder_list()
         except Exception as e:
             return {"error":traceback.format_exc()}
     
     # 名前変更
-    async def Rename(request:Request):
+    @staticmethod
+    async def Rename(request:Request) -> dict[str,str]:
         try:
             data = await request.json()
             before_name = data.get('beforeName')
@@ -40,7 +44,8 @@ class Folder_Select:
             return {"error":traceback.format_exc()}
             
     # サムネイル設定
-    async def Thumbnail(folderName: str = Form(), image: UploadFile = Form()):
+    @staticmethod
+    async def Thumbnail(folderName: str = Form(), image: UploadFile = Form()) -> dict[str,str]:
         try:
             manager = SaveFileManager(folderName)
             await manager.remake_thumbnail(image)
@@ -48,7 +53,8 @@ class Folder_Select:
         except Exception as e:
             return {"error": traceback.format_exc()}
         
-    async def Delete(request:Request):
+    @staticmethod
+    async def Delete(request:Request) -> dict[str,str]:
         try:
             data = await request.json()
             folder_name = data.get('folderName')
