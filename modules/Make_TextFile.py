@@ -13,12 +13,13 @@ from .class_definition.character_trimming_folder_manager import CharacterTrimmin
 Tagging_Model = None
 
 class Make_TextFile:
-    async def Tagging02(request:Request):
+    @staticmethod
+    async def Tagging02(request:Request) -> dict[str, str]:
         try:
             data = await request.json()
-            file_name = data.get('fileName')
-            folder_name = data.get('folderName')
-            type_name = data.get('type')
+            file_name:str = data.get('fileName')
+            folder_name:str = data.get('folderName')
+            type_name:str = data.get('type')
 
             global Tagging_Model
             if Tagging_Model == None:
@@ -40,13 +41,15 @@ class Make_TextFile:
             return {"message":"OK!!!"}
         except Exception as e:
             return {"error": traceback.format_exc()}
-    
-    async def Clear_Tagging_Model(request:Request):
+        
+    @staticmethod
+    async def Clear_Tagging_Model(request:Request) -> dict[str, str]:
         global Tagging_Model
         Tagging_Model = None
         return {"message":"OK!!!"}
-
-    async def Tagging_GetData(request:Request):
+    
+    @staticmethod
+    async def Tagging_GetData(request:Request) -> dict:
         try:
             data = await request.json()
             folder_name = data.get('folderName')
@@ -57,7 +60,7 @@ class Make_TextFile:
                 json_data["taggingData"] = {"base":[],"after":[]}
                 write_setting_file_json(folder_name,json_data)
 
-            taggingData = {"base":[],"after":[]}
+            taggingData:dict = {"base":[],"after":[]}
             taggingData["base"] = [item for item in json_data["taggingData"]["base"] if item["tag"] != [""] and item["tag"] != None and item["tag"] != []]
             taggingData["after"] = [item for item in json_data["taggingData"]["after"] if item["tag"] != [""] and item["tag"] != None and item["tag"] != []]
 
@@ -65,9 +68,10 @@ class Make_TextFile:
         except Exception as e:
             return {"error": traceback.format_exc()}
         
-    async def Already_Tag(request:Request):
+    @staticmethod
+    async def Already_Tag(request:Request) -> dict:
         data = await request.json()
-        folder_name = data.get('folderName')
+        folder_name:str = data.get('folderName')
 
         json_data = get_setting_file_json(folder_name)
 

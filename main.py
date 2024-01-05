@@ -1,3 +1,4 @@
+from typing import Any
 from fastapi import FastAPI, Request, File, UploadFile, Form
 from fastapi.datastructures import Headers
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,7 +21,7 @@ import platform
 app = FastAPI()
 
 class MyStatics(StaticFiles):
-    def is_not_modified(self, response_headers: Header, request_headers: Headers) -> bool:
+    def is_not_modified(self) -> bool:
         # your own cache rules goes here...
         return False
 
@@ -46,7 +47,7 @@ templates = Jinja2Templates(directory="templates")
 
 @app.get("/", response_class=HTMLResponse)
 @app.get("/{wildcard}", response_class=HTMLResponse)
-async def read_root(request: Request):
+async def read_root(request: Request) -> Any:
     return templates.TemplateResponse("index.html", {"request": request})
 
 # folder-select関係
