@@ -1,15 +1,16 @@
+from typing import Any
 from onnxruntime import InferenceSession
 import onnxruntime as ort
 from PIL import Image
 import numpy as np
 import csv
 import os
-from ...folder_path import get_root_folder_path
+from modules.folder_path import get_root_folder_path
 
-def get_tagging_model(model_name):
+def get_tagging_model(model_name:str) -> str:
     return os.path.join(get_root_folder_path(),"models","tagger_models",f"{model_name}.onnx")
 
-def ready_model(model_name):
+def ready_model(model_name:str) -> InferenceSession:
     if model_name.endswith(".onnx"):
         model_name = model_name[0:-5]
 
@@ -18,7 +19,7 @@ def ready_model(model_name):
 
     return model
 
-async def do_tagging(image:Image.Image, model:InferenceSession, threshold=0.35, character_threshold=0.85, exclude_tags="", trigger_name=""):
+async def do_tagging(image:Image.Image, model:InferenceSession, threshold:float=0.35, character_threshold:float=0.85, exclude_tags:str="", trigger_name:str="") -> list[str]:
     input = model.get_inputs()[0]
     height = input.shape[1]
 
@@ -66,7 +67,7 @@ async def do_tagging(image:Image.Image, model:InferenceSession, threshold=0.35, 
 
     res = ", ".join((item[0].replace("_"," ") for item in all))
 
-    res = res.split(",")
-    res = list(map(lambda word:word.strip(),res))
+    res_list = res.split(",")
+    res_list = list(map(lambda word:word.strip(),res_list))
 
-    return res
+    return res_list

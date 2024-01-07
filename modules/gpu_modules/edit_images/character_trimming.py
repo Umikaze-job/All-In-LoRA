@@ -1,8 +1,10 @@
+from typing import Any
 from numpy import ndarray
 from rembg import remove,new_session
 from PIL import Image
 
-async def character_trimming(base_image:Image.Image,data) -> Image.Image:
+
+async def character_trimming(base_image:Image.Image,data:Any) -> Image.Image:
     session = new_session(data["modelname"])
 
     alpha_image:Image.Image = remove(base_image,session=session,alpha_matting=True,
@@ -28,6 +30,9 @@ async def character_trimming(base_image:Image.Image,data) -> Image.Image:
     size = base_image.size
     alpha_box:tuple[int, int, int, int] = alpha_image.getbbox()
 
+    if type(alpha_box) == None:
+        raise Exception("ちょっと大きくする処理を失敗しました")
+    
     margin = data["spread"]
 
     # 座標を個別に取り出して演算

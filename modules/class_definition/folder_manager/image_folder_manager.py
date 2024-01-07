@@ -1,10 +1,12 @@
 import os
 import glob
+from typing import Any
 import cv2
 
 import numpy as np
-from ..folder_path import get_root_folder_path,get_localhost_name
+from modules.folder_path import get_root_folder_path,get_localhost_name
 from .Interface.folder_manager_interface import FolderManagerParent
+from modules.class_definition.json_manager import SaveFilesSettingImageFolderManager
 from fastapi import Request, UploadFile, Form, File
 from PIL import Image
 import io
@@ -16,18 +18,19 @@ images_folderはデータベースの画像を置くフォルダである
 """
 class ImageFolderManager(FolderManagerParent):
 
-    def __init__(self,folder_name):
+    def __init__(self,folder_name:str) -> None:
         folder_path = os.path.join(get_root_folder_path(),"savefiles",folder_name,"images_folder")
         url_path = os.path.join(get_localhost_name(),"savefiles",folder_name,"images_folder")
         super().__init__(folder_name,folder_path,url_path)
 
-        self.Image_Data = self.get_setting_json()["Image_Data"]["base"]
+        self.Image_Data_Manager = SaveFilesSettingImageFolderManager(folder_name=folder_name)
 
-    def get_all_url_paths(self):
+    def get_all_url_paths(self) -> list[str]:
         return super().get_all_url_paths()
 
     # 画像をフォルダに入力する
-    async def Input_Image(self,image:Image.Image,file_name:str):
+    async def Input_Image(self,image:Image.Image,file_name:str) -> None:
+        await super().Input_Image(image,file_name)
         #webpファイルに変える
         my_file_name = os.path.splitext(os.path.basename(file_name))[0]
 
@@ -50,22 +53,8 @@ class ImageFolderManager(FolderManagerParent):
             # 出力
             cv2.imwrite(os.path.join(self.folder_path, f"{my_file_name}.webp"), img)
 
-    # タグを生成して変更する
-    async def tags_generate(self,file_name:str,Tagging_Model):
-        await super().tags_generate(file_name,Tagging_Model)
 
-        json_data = self.get_setting_json()
-        json_data["Image_Data"]["base"] = self.Image_Data
+            
 
-        self.write_setting_json(json_data)
-
-    # タグを消去する
-    def tags_delete(self,file_name:str):
-        super().tags_delete(file_name=file_name)
-
-        json_data = self.get_setting_json()
-        json_data["Image_Data"]["base"] = self.Image_Data
-
-        self.write_setting_json(json_data)
     
 

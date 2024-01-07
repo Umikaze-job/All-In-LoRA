@@ -1,5 +1,6 @@
 import asyncio
 import math
+from typing import Any
 from fastapi import Request
 import os
 
@@ -11,9 +12,10 @@ import subprocess
 import shutil
 from pathlib import Path
 import json
+from modules.class_definition.folder_manager import ImageFolderManager
 
-def make_toml(json_data,dataset_folder):
-    methods:[] = json_data["imageLearningSetting"]["methods"]
+def make_toml(json_data:dict[str,Any],dataset_folder:str) -> str:
+    methods = json_data["imageLearningSetting"]["methods"]
     toml = ""
     for index, met in enumerate(methods):
         folder = os.path.join(dataset_folder,"image" + str(index).rjust(3, '0'))
@@ -39,13 +41,13 @@ metadata_file = "{meta_file}"
 """
     return toml
 
-def find_file(file_name, search_path):
+def find_file(file_name:str, search_path:str) -> str | None:
     for root, dirs, files in os.walk(search_path):
         if file_name in files:
             return os.path.join(root, file_name)
     return None
 
-def use_optimizer_command(optimizer_type):
+def use_optimizer_command(optimizer_type:str) -> str:
     if optimizer_type in ["Lion"]:
         return "--use_lion_optimizer"
     elif optimizer_type == "AdamW8bit":
@@ -54,7 +56,7 @@ def use_optimizer_command(optimizer_type):
         return f"--optimizer_type={optimizer_type}"
 
 # net_argsの取得
-def get_net_args(lora_type, conv_dim, conv_alpha, dropout, block_size=16):
+def get_net_args(lora_type:str, conv_dim:float, conv_alpha:float, dropout:float, block_size:int=16) -> str:
     if (lora_type == "dylora"):
         return f'"algo=dylora" "conv_dim={conv_dim}" "conv_alpha={conv_alpha}" "dropout={dropout}" "block_size={block_size}"'
     elif (lora_type == "lokr"):
@@ -67,7 +69,7 @@ def get_net_args(lora_type, conv_dim, conv_alpha, dropout, block_size=16):
         return ''
     
 # ネットワークモジュールの取得
-def get_network_module(lora_type):
+def get_network_module(lora_type:str) -> str:
     if (lora_type in ["lokr","locon","loha"]):
         return "lycoris.kohya"
     elif (lora_type == "dylora"):
@@ -78,7 +80,7 @@ def get_network_module(lora_type):
         return "networks.lora"
     
 # 文字列を変換する
-def process_string(input_string):
+def process_string(input_string:str) -> str:
     # スペースをアンダースコア(_)に置換
     replaced_spaces = input_string.replace(" ", "_")
     replaced_spaces = replaced_spaces.replace("(", "^(")
@@ -90,7 +92,7 @@ def process_string(input_string):
     return replaced_spaces
 
 # optimizer_argsの設定
-def get_optimizer_args(optimizer_type,sd_type):
+def get_optimizer_args(optimizer_type:str,sd_type:str) -> str:
     if optimizer_type == "AdaFactor" and sd_type == "SDXL":
         return f'"scale_parameter=False", "relative_step=False", "warmup_init=False" '
     elif optimizer_type == "AdaFactor":
@@ -105,7 +107,7 @@ def get_optimizer_args(optimizer_type,sd_type):
         return ""
     
 # lr_warmup_stepsの値を取得する
-def lr_warmup_steps_from_rate(lr_warmup_steps,max_train_epochs,toml_path,images_count):
+def lr_warmup_steps_from_rate(lr_warmup_steps:int,max_train_epochs:int,toml_path:str,images_count:int) -> int:
     # TOMLファイルを読み込む
     config = toml.load(toml_path)
 
@@ -121,7 +123,7 @@ def lr_warmup_steps_from_rate(lr_warmup_steps,max_train_epochs,toml_path,images_
     return result
 
 # とあるフォルダの中にある画像ファイルの数
-def count_images_recursive(folder_path, image_extensions=['.jpg', '.jpeg', '.png', '.gif', '.bmp',".webp"]):
+def count_images_recursive(folder_path:Any, image_extensions:list[str]=['.jpg', '.jpeg', '.png', '.gif', '.bmp',".webp"]) -> int:
     folder_path = Path(folder_path)
     
     if not folder_path.is_dir():
@@ -138,19 +140,20 @@ def count_images_recursive(folder_path, image_extensions=['.jpg', '.jpeg', '.png
     return image_count
 
 # tomlファイルのすべての[datasets][shuffle_caption]がtureかどうか
-def all_prompt_shuffle(toml_path) -> bool:
+def all_prompt_shuffle(toml_path:str) -> bool:
     # TOMLファイルを読み込む
     config = toml.load(toml_path)
     return True
     #return all(list(map(lambda data:data.get("shuffle_caption"),config["datasets"])))
 # cache_latents
-def can_cache_latents(toml_path) -> bool:
+def can_cache_latents(toml_path:str) -> bool:
     # TOMLファイルを読み込む
     config = toml.load(toml_path)
     return all(list(map(lambda data:data.get("color_aug") == False,config["datasets"])))
 
 class Make_Lora:
-    async def Image_Items(request:Request):
+    @staticmethod
+    async def Image_Items(request:Request) -> dict[str,Any]:
         data = await request.json()
         folder_name = data.get('folderName')
 
@@ -161,7 +164,8 @@ class Make_Lora:
         base_thumbnail,after_thumbnail = get_thumbnail_url_paths(folder_name)
         return {"base":base,"after":after,"base_thumbnail":base_thumbnail,"after_thumbnail":after_thumbnail,"image_items":json_data["imageLearningSetting"]["image_items"],"methods":json_data["imageLearningSetting"]["methods"],"loraData":json_data["loraData"]}
     
-    async def Save_Data(request:Request):
+    @staticmethod
+    async def Save_Data(request:Request) -> dict[str,str]:
         data = await request.json()
         folder_name = data.get('folderName')
         image_items = data.get('ImageItems')
@@ -177,7 +181,8 @@ class Make_Lora:
 
         return {"message":"OK!!!"}
     
-    async def Sd_Model(request:Request):
+    @staticmethod
+    async def Sd_Model(request:Request) -> list[dict[str,Any]]:
         json_data = get_user_setting_json()
         folder_path = json_data["sd-model-folder"]
 
@@ -191,7 +196,8 @@ class Make_Lora:
 
         return result
     
-    async def Press_Make_Command(request:Request):
+    @staticmethod
+    async def Press_Make_Command(request:Request) -> dict[str,str]:
         data = await request.json()
         folder_name = data.get('folderName')
 
@@ -407,12 +413,12 @@ class Make_Lora:
         mac_cmd = cmd.split("^")
         mac_cmd = list(map(lambda word:word.strip('\n'),mac_cmd))
         print(f"MAC_CMD:{mac_cmd}")
-        mac_cmd = "".join(mac_cmd)
+        mac_cmd_str = "".join(mac_cmd)
         with open(command_txt_path,mode="w",encoding='utf-8', newline='\n') as f:
             f.writelines([
                 f"cd {user_setting['kohyass-folder']} \n"
                 f".\\venv\Scripts\\activate \n"
-                f"{mac_cmd}"
+                f"{mac_cmd_str}"
             ])
         
         with open(command_bat_path,mode="w",encoding='utf-8', newline='\n') as f:
@@ -428,7 +434,8 @@ class Make_Lora:
 
         return {"message":"OK!!!"}
     
-    async def test_moveLoRa(request:Request):
+    @staticmethod
+    async def test_moveLoRa(request:Request) -> dict[str,str]:
         data = await request.json()
         folder_name = data.get('folderName')
         lora_name = data.get('loraName')

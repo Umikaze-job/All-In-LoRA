@@ -1,14 +1,14 @@
-from typing import List
+from typing import Any, List
 from PIL import Image
 from ultralytics import YOLO
 import os
 
-from ...folder_path import get_root_folder_path
+from modules.folder_path import get_root_folder_path
 
-def get_model_folder():
+def get_model_folder() -> str:
     return os.path.join(get_root_folder_path(),"models","face_detect_models")
 
-async def face_trimming(image:Image.Image,file_path:str,folder_name:str,data) -> List[Image.Image]:
+async def face_trimming(image:Image.Image,file_path:str,folder_name:str,data:Any) -> List[Image.Image]:
     model = YOLO(os.path.join(get_model_folder(),data["modelname"]))
 
     result = model.predict(source=file_path, save=False, imgsz=800, conf=0.4, device=0)

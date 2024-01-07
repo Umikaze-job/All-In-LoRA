@@ -5,29 +5,25 @@ import io
 
 from .gpu_modules.edit_images.body_trimming import body_trimming
 from .folder_path import get_savefiles,get_localhost_name,get_root_folder_path
-from .file_control import get_savefile_image_url_paths,get_thumbnail_url_paths
 from .gpu_modules.edit_images.character_trimming import character_trimming
 from .gpu_modules.edit_images.face_trimming import face_trimming
 from PIL import Image
 import glob
 import asyncio
 import traceback
-from typing import List
+from typing import Any, List
 import re
 import math
 
-from .class_definition.image_folder_manager import ImageFolderManager
-from .class_definition.thumbnail_base_folder_manager import ThumbnailBaseFolderManager
-from .class_definition.character_trimming_folder_manager import CharacterTrimmingFolderManager
-from .class_definition.thumbnail_after_folder_manager import ThumbnailAfterFolderManager
+from .class_definition.folder_manager import ImageFolderManager,CharacterTrimmingFolderManager,ThumbnailBaseFolderManager,ThumbnailAfterFolderManager
 
 # 任意のフォルダの中にある画像ファイルの名前のリスト
-def get_images_list(folder_path:str):
+def get_images_list(folder_path:str) -> list[str]:
     image_list = list(filter(lambda f:f.endswith((".jpg", ".jpeg", ".png", ".gif",".webp")),os.listdir(folder_path)))
     return list(map(lambda f:os.path.basename(f),image_list))
 
 # 画像のファイル名が変更されている画像パス
-def add_image_name_path(path,add_name) -> str:
+def add_image_name_path(path:str,add_name:str) -> str:
     folder = os.path.dirname(path)
     # 拡張子を含むファイル名からファイル名と拡張子を分割
     file_name, file_extension = os.path.splitext(os.path.basename(path))
@@ -46,7 +42,8 @@ def image_name_change_to_resize(path:str) -> str:
 
 class Processing_Images:
     # 作業フォルダのなかにあるデータセット画像のリストを取得
-    async def Input_Images(request:Request):
+    @staticmethod
+    async def Input_Images(request:Request) -> dict[str,Any]:
         try:
             data = await request.json()
             folder_name = data.get('folderName')
@@ -59,8 +56,10 @@ class Processing_Images:
             return {"data_paths": data_paths,"thumbnail_path":thumbnail_path}
         except Exception as e:
             return {"error":traceback.format_exc()}
+        
     # 画像をフォルダに追加する処理
-    async def Set_Input_Images(file: UploadFile = File(...),folder_name:str = Form(...)):
+    @staticmethod
+    async def Set_Input_Images(file: UploadFile = File(...),folder_name:str = Form(...)) -> dict[str,str]:
         try:
             image_manager = ImageFolderManager(folder_name)
             base_manager = ThumbnailBaseFolderManager(folder_name)
@@ -81,7 +80,8 @@ class Processing_Images:
             return {"error":traceback.format_exc()}
     
     # 画像を削除する
-    async def Delete_Input_Images(request:Request):
+    @staticmethod
+    async def Delete_Input_Images(request:Request) -> dict[str,str]:
         try:
             data = await request.json()
             filename = data.get('fileName')
@@ -97,7 +97,8 @@ class Processing_Images:
             return {"error":traceback.format_exc()}
         
     # 画像を加工した後の移動先のフォルダの画像の取得
-    async def Output_Input_Images(request:Request):
+    @staticmethod
+    async def Output_Input_Images(request:Request) -> dict[str,Any]:
         try:
             data = await request.json()
             folder_name = data.get('folderName')
@@ -113,7 +114,8 @@ class Processing_Images:
             return {"error":traceback.format_exc()}
     
     # 画像を加工した後の画像の削除
-    async def Delete_Output_Images(request:Request):
+    @staticmethod
+    async def Delete_Output_Images(request:Request) -> dict[str,str]:
         data = await request.json()
         folder_name = data.get('folderName')
         file_name = data.get('fileName')
@@ -131,14 +133,16 @@ class Processing_Images:
         except Exception as e:
             return {"error":traceback.format_exc()}
     # 
-    async def Get_Backup_Images(request:Request):
+    @staticmethod
+    async def Get_Backup_Images(request:Request) -> dict[str,list[Any]]:
         data = await request.json()
         folder_name = data.get('folderName')
         image_list = get_images_list(os.path.join(get_savefiles(),folder_name,"BackUp"))# 画像のパスの一覧
 
         return {"image_paths":[os.path.join(get_localhost_name(),"savefiles",folder_name,"BackUp",name) for name in image_list ]}
     
-    async def Get_Trimming_Models(request:Request):
+    @staticmethod
+    async def Get_Trimming_Models(request:Request) -> dict[str,list[str]]:
         models = glob.glob(os.path.join(get_root_folder_path(),"models","face_detect_models","**"))
 
         models = list(map(lambda path:os.path.basename(path),models))
@@ -146,7 +150,8 @@ class Processing_Images:
         return {"models":models}
 
     # トリミングをする
-    async def Start_Trimming(request:Request):
+    @staticmethod
+    async def Start_Trimming(request:Request) -> dict[str,str]:
         try:
             data = await request.json()
             folder_name = data.get('folderName')
@@ -155,9 +160,11 @@ class Processing_Images:
             type_name = data.get("type")
             is_resize = data.get("isResize")
 
-            base_image_path = os.path.join(get_savefiles(),folder_name,"images_folder",file_name)
-            after_image_path = os.path.join(get_savefiles(),folder_name,"character_trimming_folder",file_name)
-            after_thumbnail_path = os.path.join(get_savefiles(),folder_name,"thumbnail_folder","after",file_name)
+            base_image_path = ImageFolderManager(folder_name).get_selected_image_path(file_name)
+            after_image_manager = CharacterTrimmingFolderManager(folder_name)
+            after_thumbnail_manager = ThumbnailAfterFolderManager(folder_name)
+
+            after_image_path = ""
 
             # 画像を開く
             img = Image.open(base_image_path)
@@ -243,9 +250,9 @@ class Processing_Images:
                 out_resize_path = list(filter(lambda path:re.match(r'.*_out\.(webp|png)$', path) != None,out_resize_path))
                 if len(out_resize_path) == 0:
                     raise Exception("画像が消滅しました。")
-                out_resize_path = out_resize_path[0]
+                out_resize_path_0 = out_resize_path[0]
                 # 画像をCharacter_trimming_folderに移して、サムネイルを作成する
-                resize_image = Image.open(out_resize_path)
+                resize_image = Image.open(out_resize_path_0)
                 resize_image.save(os.path.join(get_savefiles(),folder_name,"character_trimming_folder",image_name_change_to_resize(resize_path)))
                 
                 resize_image.thumbnail((600,400))
@@ -260,7 +267,8 @@ class Processing_Images:
         
     # テスト用処理
     # character_trimming_folderフォルダの中にある画像を消す
-    async def delete_character_trimming_folder_file_Test(request:Request):
+    @staticmethod
+    async def delete_character_trimming_folder_file_Test(request:Request) -> dict[str,str]:
         data = await request.json()
         folder_name = data.get('folderName')
         images = glob.glob(os.path.join(get_savefiles(),folder_name,"character_trimming_folder","*"))

@@ -1,6 +1,6 @@
 import glob
 import os
-from ..folder_path import get_root_folder_path,get_localhost_name
+from modules.folder_path import get_root_folder_path,get_localhost_name
 from .Interface.folder_manager_interface import FolderManagerParent
 from fastapi import Request, UploadFile, Form, File
 import shutil
@@ -15,16 +15,17 @@ thumbnail_folder/baseはデータベースの画像のサムネイルを置く�
 """
 class ThumbnailBaseFolderManager(FolderManagerParent):
 
-    def __init__(self,folder_name):
+    def __init__(self,folder_name:str) -> None:
         folder_path = os.path.join(get_root_folder_path(),"savefiles",folder_name,"thumbnail_folder","base")
         url_path = os.path.join(get_localhost_name(),"savefiles",folder_name,"thumbnail_folder","base")
         super().__init__(folder_name,folder_path,url_path)
 
-    def get_all_url_paths(self):
+    def get_all_url_paths(self) -> list[str]:
         return super().get_all_url_paths()
 
     # 画像をフォルダに入力する
-    async def Input_Image(self,image:Image.Image,file_name:str):
+    async def Input_Image(self,image:Image.Image,file_name:str) -> None:
+        await super().Input_Image(image,file_name)
         #webpファイルに変える
         my_file_name = os.path.splitext(os.path.basename(file_name))[0]
 

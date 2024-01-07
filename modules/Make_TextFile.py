@@ -1,4 +1,5 @@
 import traceback
+from typing import Any
 from fastapi import Request, UploadFile, Form, File
 from .folder_path import get_root_folder_path,get_savefiles,get_localhost_name
 from .file_control import get_savefile_image_paths, get_savefile_image_url_paths, get_setting_file_json,write_setting_file_json,make_random_tags
@@ -7,8 +8,7 @@ import os
 from .gpu_modules.tagging import ready_model,do_tagging
 from PIL import Image
 
-from .class_definition.image_folder_manager import ImageFolderManager
-from .class_definition.character_trimming_folder_manager import CharacterTrimmingFolderManager
+from .class_definition.folder_manager import ImageFolderManager,CharacterTrimmingFolderManager,ThumbnailBaseFolderManager,ThumbnailAfterFolderManager
 
 Tagging_Model = None
 
@@ -48,6 +48,7 @@ class Make_TextFile:
         Tagging_Model = None
         return {"message":"OK!!!"}
     
+    # 使ってないかも
     @staticmethod
     async def Tagging_GetData(request:Request) -> dict:
         try:
@@ -69,92 +70,70 @@ class Make_TextFile:
             return {"error": traceback.format_exc()}
         
     @staticmethod
-    async def Already_Tag(request:Request) -> dict:
+    async def Already_Tag(request:Request) -> dict[str,str]:
         data = await request.json()
         folder_name:str = data.get('folderName')
 
-        json_data = get_setting_file_json(folder_name)
+        base_manager = ImageFolderManager(folder_name)
+        after_manager = CharacterTrimmingFolderManager(folder_name)
 
-        already_base = []
-        for data in json_data["taggingData"]["base"]:
-            if data.get("tag") != None and data["tag"] != [""]:
-                already_base.append(data["image_name"])
-
-        already_after = []
-        for data in json_data["taggingData"]["after"]:
-            if data.get("tag") != None and data["tag"] != [""]:
-                already_after.append(data["image_name"])
-
-        return {"base_images":already_base,"after_images":already_after}
+        return {"base_images":base_manager.all_Images_has_tags(),"after_images":after_manager.all_Images_has_tags()}
     
-    async def EditTag_GetData(request:Request):
+    @staticmethod
+    async def EditTag_GetData(request:Request) -> dict[str,Any]:
         data = await request.json()
         folder_name = data.get('folderName')
 
-        json_data = get_setting_file_json(folder_name)
+        base_manager = ImageFolderManager(folder_name)
+        after_manager = CharacterTrimmingFolderManager(folder_name)
+        base_thumbnail_manager = ThumbnailBaseFolderManager(folder_name)
+        after_thumbnail_manager = ThumbnailAfterFolderManager(folder_name)
 
-        base_url,after_url = get_savefile_image_url_paths(folder_name)
+        base_url_data = base_manager.get_all_url_paths()
+        after_url_data = after_manager.get_all_url_paths()
 
-        base = []
-        for url in base_url:
-            file_name = os.path.basename(url)
-            thunbnail_url = os.path.join(get_localhost_name(),"savefiles",folder_name,"thumbnail_folder","base",file_name)
+        base:list[dict[str,Any]] = []
+        for url_data in base_url_data:
+            print(f"URL_DATA:{url_data}")
+            file_name = os.path.basename(url_data)
 
-            tag_data = []
-            #配列内の連想配列の中にnameと同じ値の'image_name'が存在し、'tag'キーと値が存在するか
-            main_data = list(filter(lambda data:data.get("image_name") == file_name,json_data["taggingData"]["base"]))
-            if len(main_data) != 0 and main_data[0].get("tag") != None:
-                tag_data = main_data[0].get("tag")
+            thumbnail_url_list = list(filter(lambda path:os.path.basename(path) == file_name,base_thumbnail_manager.get_all_url_paths()))
+            if len(thumbnail_url_list) == 0:
+                raise Exception("通常の画像とサムネイル画像のセットが欠けています")
+            thumbnail_url = thumbnail_url_list[0]
 
-            base.append({"image_path":url,"thumbnail_path":thunbnail_url,"file_name":file_name,"tag":tag_data})
+            base.append({"image_path":url_data,"thumbnail_path":thumbnail_url,"file_name":file_name,"tag":base_manager.get_Image_tags(file_name)})
 
-        after = []
-        for url in after_url:
-            file_name = os.path.basename(url)
-            thunbnail_url = os.path.join(get_localhost_name(),"savefiles",folder_name,"thumbnail_folder","after",file_name)
+        after:list[dict[str,Any]] = []
+        for url_data in after_url_data:
+            file_name = os.path.basename(url_data)
 
-            tag_data = []
-            #配列内の連想配列の中にnameと同じ値の'image_name'が存在し、'tag'キーと値が存在するか
-            main_data = list(filter(lambda data:data.get("image_name") == file_name,json_data["taggingData"]["after"]))
-            if len(main_data) != 0 and main_data[0].get("tag") != None:
-                tag_data = main_data[0].get("tag")
+            thumbnail_url_list = list(filter(lambda path:os.path.basename(path) == file_name,after_thumbnail_manager.get_all_url_paths()))
+            if len(thumbnail_url_list) == 0:
+                raise Exception("通常の画像とサムネイル画像のセットが欠けています")
+            thumbnail_url = thumbnail_url_list[0]
 
-            after.append({"image_path":url,"thumbnail_path":thunbnail_url,"file_name":file_name,"tag":tag_data})
+            after.append({"image_path":url_data,"thumbnail_path":thumbnail_url,"file_name":file_name,"tag":after_manager.get_Image_tags(file_name=file_name)})
 
         return {"base":base,"after":after}
     
-    async def EditTag_Write(request:Request):
+    @staticmethod
+    async def EditTag_Write(request:Request) -> dict[str,str]:
         data = await request.json()
         folder_name = data.get('folderName')
         base_data = data.get('base')
         after_data = data.get('after')
 
-        json_data = get_setting_file_json(folder_name)
+        base_manager = ImageFolderManager(folder_name)
+        after_manager = CharacterTrimmingFolderManager(folder_name)
 
-        # base_dataの処理
-        for data in base_data:
-            # json_data["taggingData"]["base"]にdataの"file_name"と同じ名前の"image_name"キーの値が存在するか
-            base_data = list(filter(lambda item:item.get("image_name") == data["file_name"],json_data["taggingData"]["base"]))
-            if len(base_data) != 0:
-                base_data[0]["tag"] = data["imgtag"].split(",")
-            else:
-                json_data["taggingData"]["base"].append({'image_name':data["file_name"],"tag":data["imgtag"].split(",")})
-
-        # after_dataの処理
-        for data in after_data:
-            # json_data["taggingData"]["after"]にdataの"file_name"と同じ名前の"image_name"キーの値が存在するか
-            after_data = list(filter(lambda item:item.get("image_name") == data["file_name"],json_data["taggingData"]["after"]))
-            if len(after_data) != 0:
-                after_data[0]["tag"] = data["imgtag"].split(",")
-            else:
-                json_data["taggingData"]["after"].append({'image_name':data["file_name"],"tag":data["imgtag"].split(",")})
-
-        write_setting_file_json(folder_name,json_data)
+        base_manager.str_tags_write_to_json(base_data)
+        after_manager.str_tags_write_to_json(after_data)
 
         return {"message":"OK!!!"}
     
-
-    async def Captioning_Start(request:Request):
+    @staticmethod
+    async def Captioning_Start(request:Request) -> dict[str,Any]:
         data = await request.json()
         folder_name:str = data.get('folderName')
 
@@ -188,7 +167,8 @@ class Make_TextFile:
 
         return {"base":base_data,"after":after_data}
     
-    async def Captioning_Write(request:Request):
+    @staticmethod
+    async def Captioning_Write(request:Request) -> dict[str,Any]:
         data = await request.json()
         folder_name:str = data.get('folderName')
         base_datas = data.get('baseImages')
@@ -201,7 +181,7 @@ class Make_TextFile:
             if data["caption"] != "":
                 # json_data["taggingData"]["base"]のなかにimage_nameキーの値がdata["imageName"]である連想配列があるかどうか
                 if any(d.get("image_name") == data["file_name"] for d in json_data["taggingData"]["base"]):
-                    image_data = next((item for item in json_data["taggingData"]["base"] if item["image_name"] == data["file_name"]), None)
+                    image_data:Any = next((item for item in json_data["taggingData"]["base"] if item["image_name"] == data["file_name"]), None)
                     image_data["caption"] = data["caption"]
                 # なければ
                 else:
@@ -222,34 +202,22 @@ class Make_TextFile:
 
         return {"message":"OK!!!"}
     
-    async def Caption_Tag(request:Request):
+    @staticmethod
+    async def Caption_Tag(request:Request) -> dict[str,Any]:
         data = await request.json()
         folder_name:str = data.get('folderName')
 
         json_data = get_setting_file_json(folder_name)
-        
-        base_paths, after_paths = get_savefile_image_paths(folder_name)
 
-        base_paths = [d.split('\\')[-1] for d in base_paths]
-        after_paths = [d.split('\\')[-1] for d in after_paths]
+        base_manager = ImageFolderManager(folder_name)
+        after_manager = CharacterTrimmingFolderManager(folder_name)
 
-        base = []
-        for data in json_data["taggingData"]["base"]:
-            if data.get("image_name") != None and any(data.get("image_name") == name for name in base_paths):
-                if data.get("caption","") != "":
-                    base.append(data.get("image_name"))
-
-        after = []
-        for data in json_data["taggingData"]["after"]:
-            if data.get("image_name") != None and any(data.get("image_name") == name for name in after_paths):
-                if data.get("caption","") != "":
-                    after.append(data.get("image_name"))
-
-        return {"base_images":base,"after_images":after}
+        return {"base_images":base_manager.all_Images_has_caption(),"after_images":after_manager.all_Images_has_caption()}
     
-    async def Start_Caption(request:Request):
+    @staticmethod
+    async def Start_Caption(request:Request) -> dict[str,str]:
         data = await request.json()
         folder_name:str = data.get('folderName')
-        image_data:{"folderId":int,"ImageName":str} = data.get('captionImage')
+        image_data = data.get('captionImage')
 
         return {"caption":"Made in Caption"}

@@ -12,7 +12,7 @@ client = TestClient(app)
 @pytest.mark.folderselectcreate
 def test_Folder_Select_Create() -> Any:
     response = client.post("/api/folder-select/create",json={
-        "name":"data04",
+        "name":"data05",
     })
     assert response.json() == {"message": "Folder Created!!!"}
 
@@ -33,7 +33,7 @@ def test_Folder_Select_Rename() -> Any:
 @pytest.mark.trimming
 def test_Start_Trimming_Test() -> Any:
     response = client.post("/api/processing-images/start-trimming",json={
-        "folderName": "data04",
+        "folderName": "data05",
         "fileName": "derestefeet05.webp",
         "setting": {
             "Character_Trimming_Data": {
