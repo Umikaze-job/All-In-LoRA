@@ -1,5 +1,7 @@
 from .create_setting_json_manager import SaveFilesSettingCreateManager
 from .setting_image_data_sub_manager import SaveFilesSettingImageFolderManager,SaveFilesSettingTrimmingFolderManager
 from .interface.setting_image_data_manager import SaveFilesSettingImageDataManager
+from .setting_learning_methods_manager import SettingLearningMethodsManager
+from .setting_lora_data_manager import SettingLoraDataManager
 
-__all__ = ["SaveFilesSettingCreateManager","SaveFilesSettingTrimmingFolderManager","SaveFilesSettingImageFolderManager","SaveFilesSettingImageDataManager"]
+__all__ = ["SaveFilesSettingCreateManager","SaveFilesSettingTrimmingFolderManager","SaveFilesSettingImageFolderManager","SaveFilesSettingImageDataManager","SettingLearningMethodsManager","SettingLoraDataManager"]

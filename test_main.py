@@ -34,7 +34,7 @@ def test_Folder_Select_Rename() -> Any:
 def test_Start_Trimming_Test() -> Any:
     response = client.post("/api/processing-images/start-trimming",json={
         "folderName": "data05",
-        "fileName": "derestefeet05.webp",
+        "fileName": "derestefeet01.webp",
         "setting": {
             "Character_Trimming_Data": {
                 "modelname": "isnet-anime",
@@ -90,7 +90,7 @@ def test_Tagging_Test() -> Any:
 @pytest.mark.presslora
 def test_Press_Lora_Test() -> Any:
     response = client.post("/api/make-lora/press-start-lora",json={
-        "folderName":"data03",
+        "folderName":"data05",
     })
     assert response.json() == {"message":"OK!!!"}
 

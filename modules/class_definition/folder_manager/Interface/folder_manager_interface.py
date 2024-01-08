@@ -37,13 +37,14 @@ class FolderManagerParent:
 
     #指定した名前を持つ、ファイルの中に存在する画像のパスを取得
     def get_selected_image_path(self,name:str) -> str:
-        all_files_path = self.get_all_image_paths()
-        path_list = list(filter(lambda pa:os.path.basename(pa) == name,all_files_path))
+        return os.path.join(self.folder_path,name)
         
-        if len(path_list) != 0:
-            return path_list[0]
-        else:
-            raise Exception("指定した画像の名前が存在しません")
+    # 追加の名前が付いたファイルパス
+    def additional_named_path(self,file_path:str,addName:str) -> str:
+        # 拡張子を含むファイル名からファイル名と拡張子を分割
+        name, extension = os.path.splitext(os.path.basename(file_path))
+
+        return os.path.join(self.folder_path,name + addName + extension)
     
     # 画像をフォルダに追加する
     async def Input_Image(self,image:Image.Image,file_name:str) -> None:

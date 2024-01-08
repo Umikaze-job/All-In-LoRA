@@ -1,6 +1,9 @@
 import datetime
 from modules.class_definition.json_manager.interface.savefiles_setting_manager import SaveFilesSettingJsonManager
 
+"""
+SaveFilesSettingCreateManager:setting.jsonを作るためだけのマネージャー
+"""
 class SaveFilesSettingCreateManager(SaveFilesSettingJsonManager):
     def create_setting_file(self) -> None:
         now = datetime.datetime.now()

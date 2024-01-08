@@ -17,7 +17,29 @@ setting.jsonの中身
 ],"after":[
     {"file_name":"","tags":"","caption":"","method":""}
 ]},
-"LearningMethods":["method01","method02"],
+"LearningMethods":[
+    {
+        name:string,
+        setting:{
+            batchSize: number,
+            bucketNoUpscale: boolean,
+            bucketResoSteps: number,
+            enableBucket: boolean,
+            maxBucketReso:number,
+            minBucketReso:number,
+            resolution:number,
+            colorAug: boolean,
+            flipAug: boolean,
+            keepTokens:number,
+            numRepeats:number,
+            shuffleCaption: boolean,
+        }
+    },
+    {
+        name:string,
+        ...
+    },...
+],
 "loraData":{
     MainSetting:{
         outputFileName:string, 

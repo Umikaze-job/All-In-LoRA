@@ -22,14 +22,6 @@ def get_images_list(folder_path:str) -> list[str]:
     image_list = list(filter(lambda f:f.endswith((".jpg", ".jpeg", ".png", ".gif",".webp")),os.listdir(folder_path)))
     return list(map(lambda f:os.path.basename(f),image_list))
 
-# 画像のファイル名が変更されている画像パス
-def add_image_name_path(path:str,add_name:str) -> str:
-    folder = os.path.dirname(path)
-    # 拡張子を含むファイル名からファイル名と拡張子を分割
-    file_name, file_extension = os.path.splitext(os.path.basename(path))
-
-    return os.path.join(folder,file_name + add_name + file_extension)
-
 # 画像のファイル名を変更する_outから_resizeに変更する
 def image_name_change_to_resize(path:str) -> str:
     filename,ext = os.path.splitext((os.path.basename(path)))
@@ -160,11 +152,13 @@ class Processing_Images:
             type_name = data.get("type")
             is_resize = data.get("isResize")
 
-            base_image_path = ImageFolderManager(folder_name).get_selected_image_path(file_name)
-            after_image_manager = CharacterTrimmingFolderManager(folder_name)
-            after_thumbnail_manager = ThumbnailAfterFolderManager(folder_name)
+            base_image_path = ImageFolderManager(folder_name=folder_name).get_selected_image_path(name=file_name)
 
-            after_image_path = ""
+            after_image_manager = CharacterTrimmingFolderManager(folder_name=folder_name)
+            after_thumbnail_manager = ThumbnailAfterFolderManager(folder_name=folder_name)
+
+            after_image_path = after_image_manager.get_selected_image_path(name=file_name)
+            after_thumbnail_path = after_thumbnail_manager.get_selected_image_path(name=file_name)
 
             # 画像を開く
             img = Image.open(base_image_path)
@@ -176,29 +170,29 @@ class Processing_Images:
                 if type(img) == "Exception":
                     raise Exception(img)
                 result_imgset.append(img)
-                after_image_path = add_image_name_path(after_image_path,"_character")
-                after_thumbnail_path = add_image_name_path(after_thumbnail_path,"_character")
+                after_image_path = after_image_manager.additional_named_path(file_path=after_image_path,addName="_character")
+                after_thumbnail_path = after_thumbnail_manager.additional_named_path(file_path=after_thumbnail_path,addName="_character")
             elif type_name == "Face":
                 # ここでFace_Trimmingの処理をする
                 ft_setting = setting["Face_Trimming_Data"]
                 result_imgset = await face_trimming(img,base_image_path,folder_name,ft_setting)
-                after_image_path = add_image_name_path(after_image_path,"_face")
-                after_thumbnail_path = add_image_name_path(after_thumbnail_path,"_face")
+                after_image_path = after_image_manager.additional_named_path(file_path=after_image_path,addName="_face")
+                after_thumbnail_path = after_thumbnail_manager.additional_named_path(file_path=after_thumbnail_path,addName="_face")
             elif type_name == "Body":
                 # ここでBody_Trimmingの処理をする
                 bd_setting = setting["Body_Trimming_Data"]
                 result_imgset = await body_trimming(img,base_image_path,folder_name,bd_setting)
-                after_image_path = add_image_name_path(after_image_path,"_body")
-                after_thumbnail_path = add_image_name_path(after_thumbnail_path,"_body")
+                after_image_path = after_image_manager.additional_named_path(file_path=after_image_path,addName="_body")
+                after_thumbnail_path = after_thumbnail_manager.additional_named_path(file_path=after_thumbnail_path,addName="_body")
             
             # リサイズをする必要がないときは
             if is_resize == False:
                 for index,im in enumerate(result_imgset):
-                    im.save(add_image_name_path(after_image_path,str(index).rjust(3, '0')))
+                    im.save(after_image_manager.additional_named_path(file_path=after_image_path,addName=str(index).rjust(3, '0')))
 
                     im.thumbnail((600,400))
 
-                    im.save(add_image_name_path(after_thumbnail_path,str(index).rjust(3, '0')),quality=50)
+                    im.save(after_thumbnail_manager.additional_named_path(file_name=after_thumbnail_path,addName=str(index).rjust(3, '0')),quality=50)
 
                     return {"message":"OK!!!"}
             
@@ -221,12 +215,12 @@ class Processing_Images:
                 
                 #倍率が1以下なら普通に保存する
                 if rate <= 1:
-                    im.save(add_image_name_path(after_image_path,str(index).rjust(3, '0')))
+                    im.save(after_image_manager.additional_named_path(file_path=after_image_path,addName=str(index).rjust(3, '0')))
                     im.thumbnail((600,400))
-                    im.save(add_image_name_path(after_thumbnail_path,str(index).rjust(3, '0')),quality=50)
+                    im.save(after_thumbnail_manager.additional_named_path(file_path=after_thumbnail_path,addName=str(index).rjust(3, '0')),quality=50)
                     continue
 
-                tamp_file_name = add_image_name_path(os.path.join(temp_path,os.path.basename(after_image_path)),str(index).rjust(3, '0'))
+                tamp_file_name = after_image_manager.additional_named_path_for_temp(file_path=after_image_path,addName=str(index).rjust(3, '0'))
                 im.save(tamp_file_name)
                 # 外部ファイルのrembgで拡大する
                 cmd = ["python",f"{os.path.join(get_root_folder_path(),'tools','Real-ESRGAN','inference_realesrgan.py')}",
@@ -244,7 +238,8 @@ class Processing_Images:
 
                 print(os.path.join(get_root_folder_path(),'tools','Real-ESRGAN','inference_realesrgan.py'))
 
-                resize_path = add_image_name_path(f"{os.path.join(os.path.dirname(tamp_file_name),os.path.splitext(os.path.basename(tamp_file_name))[0])}.webp","_out")
+                # 最終的に.webpファイルにする
+                resize_path = after_image_manager.additional_named_path_for_temp(file_path=f"{os.path.join(os.path.dirname(tamp_file_name),os.path.splitext(os.path.basename(tamp_file_name))[0])}.webp",addName="_out")
                 # リサイズされた画像を取得する
                 out_resize_path = glob.glob(os.path.join(os.path.dirname(resize_path),"**"))
                 out_resize_path = list(filter(lambda path:re.match(r'.*_out\.(webp|png)$', path) != None,out_resize_path))
