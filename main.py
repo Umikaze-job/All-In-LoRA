@@ -8,10 +8,7 @@ from fastapi.responses import HTMLResponse,StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
-from modules.folder_select import Folder_Select
-from modules.processing_images import Processing_Images
-from modules.Make_TextFile import Make_TextFile
-from modules.Make_Lora import Make_Lora
+from modules import *
 
 from asyncio import ProactorEventLoop, set_event_loop, ProactorEventLoop, get_event_loop
 from uvicorn import Config, Server
@@ -45,7 +42,23 @@ templates = Jinja2Templates(directory="templates")
 async def read_root(request: Request) -> Any:
     return templates.TemplateResponse("index.html", {"request": request})
 
-# folder-select関係
+@app.post("/api/init/get-init-data")
+async def Init_Get_Init_Data() -> Any:
+    return await App_Init.Get_init_Data()
+
+@app.post("/api/welcome-page/sd-models-folder")
+async def Welcome_Page_Sd_Models_Folder(request:Request) -> Any:
+    return await Welcome_Page.Sd_Models_Folder(request)
+
+@app.post("/api/welcome-page/kohyass-folder")
+async def Welcome_Page_Kohyass_Folder(request:Request) -> Any:
+    return await Welcome_Page.Kohyass_Folder(request)
+
+@app.post("/api/welcome-page/lora-folder")
+async def Welcome_Page_Lora_Folder(request:Request) -> Any:
+    return await Welcome_Page.Lora_Folder(request)
+
+# region folder-select関係
 @app.post("/api/folder-select/get-folders")
 async def Folder_Select_Get_Folders(request: Request) -> Any:
     return await Folder_Select.Get_Folders(request)
@@ -65,7 +78,9 @@ async def Folder_Select_Thumbnail(folderName: str = Form(), image: UploadFile = 
 @app.post("/api/folder-select/delete")
 async def Folder_Select_Delete(request: Request) -> Any:
     return await Folder_Select.Delete(request)
+#endregion
 
+# region processing-images
 # processing-images
 @app.post("/api/processing-images/input-images")
 async def Processing_Images_Input_Images(request:Request) -> Any:
@@ -100,6 +115,8 @@ async def Processing_Images_Get_Trimming_Models(request:Request) -> Any:
 @app.post("/api/processing-images/start-trimming")
 async def Processing_Images_Start_Trimming(request:Request) -> Any:
     return await Processing_Images.Start_Trimming(request)
+# endregion
+# region Make-Textfile
 # tagging
 @app.post("/api/make-textfile/tagging/write")
 async def Make_TextFile_Tagging(request:Request) -> Any:
@@ -140,8 +157,8 @@ async def Make_TextFile_Caption_Tag(request:Request) -> Any:
 @app.post("/api/make-textfile/captioning/start-caption")
 async def Make_TextFile_Start_Caption(request:Request) -> Any:
     return await Make_TextFile.Start_Caption(request)
-
-#make_lora
+#endregion
+# region make_lora
 @app.post("/api/make-lora/image-items")
 async def Make_Lora_Image_Items(request:Request) -> Any:
     return await Make_Lora.Image_Items(request)
@@ -157,6 +174,7 @@ async def Make_Lora_Save_Data(request:Request) -> Any:
 @app.post("/api/make-lora/sd-model")
 async def Make_Lora_Sd_Model(request:Request) -> Any:
     return await Make_Lora.Sd_Model(request)
+#endregion
 
 # Test用のパス
 @app.post('/test/processing-images/delete-character_trimming_folder-images')
