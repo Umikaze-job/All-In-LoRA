@@ -42,10 +42,13 @@ templates = Jinja2Templates(directory="templates")
 async def read_root(request: Request) -> Any:
     return templates.TemplateResponse("index.html", {"request": request})
 
-@app.post("/api/init/get-init-data")
-async def Init_Get_Init_Data() -> Any:
-    return await App_Init.Get_init_Data()
+# region topbar-setting
+@app.post("/api/topbar/set-language")
+async def Set_Language(request:Request) -> Any:
+    return await TopbarManager.Set_Language(request=request)
+# endregion
 
+# region Welcome-Page
 @app.post("/api/welcome-page/sd-models-folder")
 async def Welcome_Page_Sd_Models_Folder(request:Request) -> Any:
     return await Welcome_Page.Sd_Models_Folder(request)
@@ -58,6 +61,11 @@ async def Welcome_Page_Kohyass_Folder(request:Request) -> Any:
 async def Welcome_Page_Lora_Folder(request:Request) -> Any:
     return await Welcome_Page.Lora_Folder(request)
 
+@app.post("/api/welcome-page/init-setting")
+async def Welcome_Page_All_Folder_Path() -> Any:
+    return await Welcome_Page.Init_Setting()
+
+#endregion
 # region folder-select関係
 @app.post("/api/folder-select/get-folders")
 async def Folder_Select_Get_Folders(request: Request) -> Any:
@@ -78,6 +86,12 @@ async def Folder_Select_Thumbnail(folderName: str = Form(), image: UploadFile = 
 @app.post("/api/folder-select/delete")
 async def Folder_Select_Delete(request: Request) -> Any:
     return await Folder_Select.Delete(request)
+
+@app.post("/api/folder-select/set-folder-name")
+async def Set_Folder_Name(request: Request) -> Any:
+    return await Folder_Select.Set_Folder_Name(request)
+
+
 #endregion
 
 # region processing-images

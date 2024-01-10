@@ -16,7 +16,7 @@ class UserSettingManager:
         return json_data["sd-model-folder"]
     
     @Sd_Model_Folder.setter
-    def Sd_Model_Folder(self,value) -> None:
+    def Sd_Model_Folder(self,value:str) -> None:
         json_data = self.get_setting_file_json()
         json_data["sd-model-folder"] = value
         self.write_setting_file_json(json_data=json_data)
@@ -27,7 +27,7 @@ class UserSettingManager:
         return json_data["lora-folder"]
     
     @Lora_Folder.setter
-    def Lora_Folder(self,value) -> None:
+    def Lora_Folder(self,value:str) -> None:
         json_data = self.get_setting_file_json()
         json_data["lora-folder"] = value
         self.write_setting_file_json(json_data=json_data)
@@ -38,10 +38,33 @@ class UserSettingManager:
         return json_data["kohyass-folder"]
     
     @Kohyass_Folder.setter
-    def Kohyass_Folder(self,value) -> str:
+    def Kohyass_Folder(self,value:str) -> None:
         json_data = self.get_setting_file_json()
         json_data["kohyass-folder"] = value
         self.write_setting_file_json(json_data=json_data)
+
+    @property
+    def Select_Folder_Name(self) -> str:
+        json_data = self.get_setting_file_json()
+        return json_data["select-folder-name"]
+    
+    @Select_Folder_Name.setter
+    def Select_Folder_Name(self,value:str) -> None:
+        json_data = self.get_setting_file_json()
+        json_data["select-folder-name"] = value
+        self.write_setting_file_json(json_data=json_data)
+
+    @property
+    def User_Language(self) -> str:
+        json_data = self.get_setting_file_json()
+        return json_data["language"]
+    
+    @User_Language.setter
+    def User_Language(self,value:str) -> None:
+        json_data = self.get_setting_file_json()
+        json_data["language"] = value
+        self.write_setting_file_json(json_data=json_data)
+
 
     # setting.jsonを読み込み
     def get_setting_file_json(self) -> Any:

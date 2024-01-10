@@ -1,6 +1,7 @@
 import traceback
 from fastapi import Request, UploadFile, Form
 from .class_definition.folder_manager import SaveFileManager
+from .class_definition.user_setting_manager import UserSettingManager
 from .my_exception import DuplicateException
 from typing import Any
 
@@ -60,6 +61,7 @@ class Folder_Select:
             folder_name = data.get('folderName')
             manager = SaveFileManager(folder_name)
             manager.delete_folder()
+            UserSettingManager().Select_Folder_Name = ""
             return {"message": "Folder Deleted!!!"}
         except FileNotFoundError as e:
             return {"error":f"not found\n {e}"}
@@ -67,3 +69,10 @@ class Folder_Select:
             return {"error":f"PermissionError\n {e}"}
         except Exception as e:
             return {"error":traceback.format_exc()}
+        
+    @staticmethod
+    async def Set_Folder_Name(request:Request) -> None:
+        data = await request.json()
+        folder_name = data.get('folderName')
+        manager = UserSettingManager()
+        manager.Select_Folder_Name = folder_name

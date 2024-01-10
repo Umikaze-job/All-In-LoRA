@@ -19,7 +19,7 @@ def ready_model(model_name:str) -> InferenceSession:
 
     return model
 
-async def do_tagging(image:Image.Image, model:InferenceSession, threshold:float=0.35, character_threshold:float=0.85, exclude_tags:str="", trigger_name:str="") -> list[str]:
+async def do_tagging(image:Image.Image, model:InferenceSession, threshold:float, character_threshold:float, exclude_tags:str, trigger_name:str) -> list[str]:
     input = model.get_inputs()[0]
     height = input.shape[1]
 

@@ -59,7 +59,7 @@ class Processing_Images:
             # 画像ファイルと名前を取得する
             # UploadFileからの画像の読み込みは1回しかできない
             content = await file.read()
-            file_name = file.filename
+            file_name:str = file.filename
 
             img_bin = io.BytesIO(content)
             image = Image.open(img_bin).convert("RGBA")
@@ -192,7 +192,7 @@ class Processing_Images:
 
                     im.thumbnail((600,400))
 
-                    im.save(after_thumbnail_manager.additional_named_path(file_name=after_thumbnail_path,addName=str(index).rjust(3, '0')),quality=50)
+                    im.save(after_thumbnail_manager.additional_named_path(file_path=after_thumbnail_path,addName=str(index).rjust(3, '0')),quality=50)
 
                     return {"message":"OK!!!"}
             

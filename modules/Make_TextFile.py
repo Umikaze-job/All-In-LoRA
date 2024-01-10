@@ -20,23 +20,24 @@ class Make_TextFile:
             file_name:str = data.get('fileName')
             folder_name:str = data.get('folderName')
             type_name:str = data.get('type')
+            loraData:dict[str,Any] = data.get('lotaData')
 
             global Tagging_Model
             if Tagging_Model == None:
                 Tagging_Model = ready_model("wd-v1-4-vit-tagger-v2.onnx")
 
             if type_name == "base":
-                manager = ImageFolderManager(folder_name)
-                await manager.tags_generate(file_name,Tagging_Model)
+                manager = ImageFolderManager(folder_name=folder_name)
+                await manager.tags_generate(file_name,Tagging_Model,lora_data=loraData)
             elif type_name == "after":
-                manager = CharacterTrimmingFolderManager(folder_name)
-                await manager.tags_generate(file_name,Tagging_Model)
+                ca_manager = CharacterTrimmingFolderManager(folder_name=folder_name)
+                await ca_manager.tags_generate(file_name,Tagging_Model,lora_data=loraData)
             elif type_name == "deleteBase":
-                manager = ImageFolderManager(folder_name)
+                manager = ImageFolderManager(folder_name=folder_name)
                 manager.tags_delete(file_name)
             elif type_name == "deleteAfter":
-                manager = CharacterTrimmingFolderManager(folder_name)
-                manager.tags_delete(file_name)
+                ca_manager = CharacterTrimmingFolderManager(folder_name=folder_name)
+                ca_manager.tags_delete(file_name)
 
             return {"message":"OK!!!"}
         except Exception as e:
@@ -70,7 +71,7 @@ class Make_TextFile:
             return {"error": traceback.format_exc()}
         
     @staticmethod
-    async def Already_Tag(request:Request) -> dict[str,str]:
+    async def Already_Tag(request:Request) -> dict[str,list[str]]:
         data = await request.json()
         folder_name:str = data.get('folderName')
 

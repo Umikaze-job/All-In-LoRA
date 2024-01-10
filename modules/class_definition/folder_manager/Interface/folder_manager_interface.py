@@ -65,14 +65,14 @@ class FolderManagerParent:
             f.write(json.dumps(json_data, indent=2))
 
     # タグを生成して変更する
-    async def tags_generate(self,file_name:str,Tagging_Model:Any) -> None:
+    async def tags_generate(self,file_name:str,Tagging_Model:Any,lora_data:dict[str,Any]) -> None:
         if self.Image_Data_Manager == False:
             return
         
         file_path = os.path.join(self.folder_path,file_name)
         image = Image.open(file_path)
         # json_data["taggingData"]["---"]["file_name"]の値がfile_nameと同じ名前の連想配列があるとき
-        tags = await do_tagging(image,Tagging_Model) #タグを指定
+        tags = await do_tagging(image,Tagging_Model,threshold=lora_data["threshold"],character_threshold=lora_data["character_threshold"],exclude_tags=lora_data["ExcludeTags"],trigger_name=lora_data["triggerWord"]) #タグを指定
         
         self.Image_Data_Manager.change_tags(file_name=file_name,tags=tags)
 

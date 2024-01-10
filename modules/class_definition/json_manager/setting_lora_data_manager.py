@@ -15,12 +15,12 @@ class SettingLoraDataManager(SaveFilesSettingJsonManager):
 
         return json_data["loraData"]
     
-    def set_lora_data(self,data:list[dict[str,Any]]) -> None:
+    def set_lora_data(self,data:dict[str,Any]) -> None:
         self.LoraData = data
 
         self.save_lora_data()
 
-    def save_lora_data(self):
+    def save_lora_data(self) -> None:
         json_data = super().get_setting_file_json()
 
         json_data["loraData"] = self.LoraData
