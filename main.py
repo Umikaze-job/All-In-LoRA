@@ -148,6 +148,10 @@ async def Make_TextFile_Tagging_GetData(request:Request) -> Any:
 async def Make_TextFile_Tagging_Already_Tag(request:Request) -> Any:
     return await Make_TextFile.Already_Tag(request)
 
+@app.post("/api/make-textfile/tagging/set-trigger-word")
+async def Make_TextFile_Tagging_Set_Trigger_Word(request:Request) -> Any:
+    return await Make_TextFile.Set_Trigger_Word(request)
+
 @app.post("/api/make-textfile/edit_tag/getdata")
 async def Make_TextFile_EditTag_GetData(request:Request) -> Any:
     return await Make_TextFile.EditTag_GetData(request)

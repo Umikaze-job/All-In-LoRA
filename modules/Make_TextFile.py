@@ -9,6 +9,7 @@ from .gpu_modules.tagging import ready_model,do_tagging
 from PIL import Image
 
 from .class_definition.folder_manager import ImageFolderManager,CharacterTrimmingFolderManager,ThumbnailBaseFolderManager,ThumbnailAfterFolderManager
+from .class_definition.json_manager import SettingLoraDataManager
 
 Tagging_Model = None
 
@@ -69,6 +70,17 @@ class Make_TextFile:
             return {"tagdata":taggingData}
         except Exception as e:
             return {"error": traceback.format_exc()}
+    
+    # トリガーワードをデータに保存する
+    @staticmethod
+    async def Set_Trigger_Word(request:Request) -> None:
+        data = await request.json()
+        folder_name:str = data.get('folderName')
+        trigger_word:str = data.get('triggerWord')
+
+        manager = SettingLoraDataManager(folder_name=folder_name)
+
+        manager.triggerWord = trigger_word
         
     @staticmethod
     async def Already_Tag(request:Request) -> dict[str,list[str]]:

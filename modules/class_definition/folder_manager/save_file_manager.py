@@ -11,6 +11,7 @@ import glob
 from PIL import Image
 from fastapi import UploadFile, Form, File
 import io
+import random
 
 """
 SaveFileManager:savefiles/<fileName>に関する処理をするクラス
@@ -70,7 +71,9 @@ class SaveFileManager:
         #既存のサムネイル画像を削除する
         self.__delete_thumbnails()
         # ソースフォルダとターゲットフォルダのパスを指定
-        source_thunbnail_path = os.path.join(get_root_folder_path(),"assets","thumbnail_pre.png")
+        source_thunbnail_path_set = glob.glob(os.path.join(get_root_folder_path(),"assets","thumbnail_pre","*.png"))
+        id = random.randint(0,len(source_thunbnail_path_set) - 1)
+        source_thunbnail_path = source_thunbnail_path_set[id]
 
         if os.path.isfile(source_thunbnail_path):
             image = Image.open(source_thunbnail_path)

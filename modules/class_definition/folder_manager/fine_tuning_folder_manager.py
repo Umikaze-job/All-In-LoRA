@@ -131,9 +131,12 @@ metadata_file = "{meta_file}"
 
     # サンプル画像をつくるときのプロンプトファイルを作成
     def make_sample_prompt_file(self,sample:dict[str,Any]) -> None:
+        trigger_word = ""
+        if sample.get('triggerWord') != None and sample.get('triggerWord') != "":
+            trigger_word = f"{sample['triggerWord']},"
         with open(self.sample_prompt_file_path, 'w') as sample_prompt_file:
             # ここに sample_prompt.txt の内容を書き込む処理を追加
-            sample_prompt_file.write(f"{sample['positivePrompt']} --n {sample['negativePrompt']} --w {sample['width']} --h {sample['height']} --d 1 --l 7.5 --s {sample['steps']}")
+            sample_prompt_file.write(f"{trigger_word}{sample['positivePrompt']} --n {sample['negativePrompt']} --w {sample['width']} --h {sample['height']} --d 1 --l 7.5 --s {sample['steps']}")
 
     # コマンドの実行
     async def execute_bat_file(self) -> None:

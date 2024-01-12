@@ -25,6 +25,9 @@ class SaveFilesSettingImageDataManager(SaveFilesSettingJsonManager):
         # file_nameのデータが存在しない場合
         if len(list(filter(lambda data:data.get("file_name") != None and data.get("file_name") == file_name,self.Image_Data))) == 0:
             self.Image_Data.append({"file_name":file_name,"tags":tags})
+            
+            # jsonに書き込む
+            self.__write_image_data()
             return
 
         # file_nameのデータが存在する場合
@@ -116,7 +119,7 @@ class SaveFilesSettingImageDataManager(SaveFilesSettingJsonManager):
     def get_image_path_and_learning_data(self,all_image_paths:list[str]) -> list[dict[str,str]]:
         result = []
         for image_path in all_image_paths:
-            data = list(filter(lambda d:d.get("file_name") == os.path.basename(image_path),self.Image_Data))
+            data = list(filter(lambda d:d.get("file_name") == os.path.basename(image_path) and d.get("method") != None,self.Image_Data))
             if len(data) == 0:
                 result.append({"image_name":os.path.basename(image_path),"method_name":""})
             else:

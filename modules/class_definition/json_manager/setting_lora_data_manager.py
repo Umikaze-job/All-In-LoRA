@@ -15,6 +15,15 @@ class SettingLoraDataManager(SaveFilesSettingJsonManager):
 
         return json_data["loraData"]
     
+    @property
+    def triggerWord(self) -> str:
+        return self.LoraData["sampleImage"]["triggerWord"]
+    
+    @triggerWord.setter
+    def triggerWord(self,word:str) -> None:
+        self.LoraData["sampleImage"]["triggerWord"] = word
+        self.save_lora_data()
+    
     def set_lora_data(self,data:dict[str,Any]) -> None:
         self.LoraData = data
 
