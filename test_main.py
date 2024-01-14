@@ -33,8 +33,8 @@ def test_Folder_Select_Rename() -> Any:
 @pytest.mark.trimming
 def test_Start_Trimming_Test() -> Any:
     response = client.post("/api/processing-images/start-trimming",json={
-        "folderName": "data05",
-        "fileName": "derestefeet01.webp",
+        "folderName": "data02",
+        "fileName": "derestefeet03.webp",
         "setting": {
             "Character_Trimming_Data": {
                 "modelname": "isnet-anime",
@@ -65,7 +65,7 @@ def test_Start_Trimming_Test() -> Any:
             }
         },
         "isResize": True,
-        "type": "Body"
+        "type": "Face"
     })
     assert response.json() == {"message":"OK!!!"}
 

@@ -1,22 +1,12 @@
-import asyncio
-import math
-import time
 import traceback
 from typing import Any
 from fastapi import Request
 import os
 
-import toml
-from .folder_path import get_fine_tuning_folder,get_root_folder_path
-from .file_control import get_savefile_image_paths, write_setting_file_json,get_savefile_image_url_paths,get_setting_file_json,get_user_setting_json,get_thumbnail_url_paths,get_user_setting_json
-from .folder_path import get_savefiles
-import subprocess
-import shutil
-from pathlib import Path
-import json
+from .folder_path import get_fine_tuning_folder
+from .file_control import get_user_setting_json,get_user_setting_json
 from modules.class_definition.folder_manager import ImageFolderManager,CharacterTrimmingFolderManager,ThumbnailBaseFolderManager,ThumbnailAfterFolderManager,FineTuningFolderManager
 from modules.class_definition.json_manager import SettingLearningMethodsManager,SettingLoraDataManager,SaveFilesSettingImageFolderManager,SaveFilesSettingTrimmingFolderManager
-from fastapi.responses import StreamingResponse
 
 class Make_Lora:
     @staticmethod
@@ -89,8 +79,6 @@ class Make_Lora:
             data = await request.json()
             folder_name = data.get('folderName')
 
-            fine_tuning_manager = FineTuningFolderManager(folder_name=folder_name)
-
             base_image_manager = ImageFolderManager(folder_name=folder_name)
             after_image_manager = CharacterTrimmingFolderManager(folder_name=folder_name)
 
@@ -100,7 +88,9 @@ class Make_Lora:
             learning_method_set = SettingLearningMethodsManager(folder_name=folder_name).get_learning_methods_data()
             lora_data_set = SettingLoraDataManager(folder_name=folder_name).get_lora_data()
 
-            fine_tuning_manager.output_files_to_lora_folder(lora_data=lora_data_set)
+            fine_tuning_manager = FineTuningFolderManager(folder_name=folder_name,lora_data=lora_data_set,method_data=learning_method_set)
+
+            fine_tuning_manager.output_files_to_lora_folder()
 
             #? 一旦、fine_tuning_folderの中身をすべて削除する。
             fine_tuning_manager.folder_init()
@@ -133,18 +123,22 @@ class Make_Lora:
                 fine_tuning_manager.make_meta_data(folder_index=index,images_data=base_images + after_images)
 
             # tomlファイルを作成する
-            fine_tuning_manager.make_toml_file(method_data=learning_method_set)
+            fine_tuning_manager.make_toml_file()
 
             # sample_prompt.txtを作成する
             fine_tuning_manager.make_sample_prompt_file(sample=lora_data_set["sampleImage"])
 
-            # batファイルを作成する
-            fine_tuning_manager.make_bat_file(lora_data=lora_data_set)
+            # shellファイルを作成する
+            fine_tuning_manager.make_shell_file()
         
-            # batファイルの実行
-            await fine_tuning_manager.execute_bat_file()
+            # shellファイルの実行
+            code = await fine_tuning_manager.execute_file()
+            
+            #エラーが発生した場合
+            if code == 1:
+               return {"message":"error"} 
 
-            fine_tuning_manager.output_files_to_lora_folder(lora_data=lora_data_set)
+            fine_tuning_manager.output_files_to_lora_folder()
 
             return {"message":"OK!!!"}
         except Exception as e:

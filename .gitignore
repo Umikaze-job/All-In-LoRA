@@ -11,3 +11,4 @@ models/face_detect_models/**
 savefiles/**
 !savefiles/savefile.txt
 tools/**
+user_setting.json

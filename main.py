@@ -65,6 +65,18 @@ async def Welcome_Page_Lora_Folder(request:Request) -> Any:
 async def Welcome_Page_All_Folder_Path() -> Any:
     return await Welcome_Page.Init_Setting()
 
+@app.post("/api/welcome-page/real-esrgan-install")
+async def Welcome_Page_Real_ESRGAN_Install(request:Request) -> Any:
+    return await Welcome_Page.RealESRGAN_Install(request)
+
+@app.post("/api/welcome-page/setting-mixed-precision")
+async def Welcome_Page_Setting_Mixed_Precision(request:Request) -> Any:
+    return await Welcome_Page.Setting_Mixed_Precision(request)
+
+@app.post("/api/welcome-page/check-cuda-cudnn")
+async def Welcome_Page_Check_Cuda_Cudnn() -> Any:
+    return await Welcome_Page.Check_Cuda_Cudnn()
+
 #endregion
 # region folder-select関係
 @app.post("/api/folder-select/get-folders")

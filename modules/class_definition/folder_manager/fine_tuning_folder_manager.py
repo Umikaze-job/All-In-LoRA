@@ -10,16 +10,22 @@ from typing import Any
 from modules.folder_path import get_savefiles
 from modules.file_util import get_user_setting_json
 from modules.class_definition.user_setting_manager import UserSettingManager
+import platform
+
+def is_windows() -> bool:
+    return platform.system() == 'Windows'
 """
 FineTuningFolderManager:fine_tuning_folderフォルダの管理をするマネージャー
 """
 
 class FineTuningFolderManager:
     
-    def __init__(self,folder_name:str) -> None:
+    def __init__(self,folder_name:str,lora_data:dict[str,Any],method_data:list[dict[str,Any]]) -> None:
         self.folder_path = os.path.join(get_savefiles(),folder_name,"fine_tuning_folder")
         self.user_setting = get_user_setting_json()
         self.user_setting_manager = UserSettingManager()
+        self.lora_data = lora_data
+        self.method_data = method_data
 
     # ルートデータセットのフォルダパス
     @property
@@ -53,8 +59,8 @@ class FineTuningFolderManager:
     
     #commant.txtファイルのパス
     @property
-    def command_txt_file_path(self) -> str:
-        return os.path.join(self.folder_path,"command.txt")
+    def command_sh_file_path(self) -> str:
+        return os.path.join(self.folder_path,"command.sh")
     
     # データセットが含まれているフォルダの取得
     def get_dataset_folder_path(self,count:int) -> str:
@@ -102,50 +108,85 @@ class FineTuningFolderManager:
             f.write(json.dumps(json_write, indent=2))
     
     # tomlファイルを作成する.
-    def make_toml_file(self,method_data:list[dict[str,Any]]) -> None:
-        toml = ""
-        for index,met in enumerate(method_data):
+    def make_toml_file(self) -> None:
+        toml = []
+        for index,met in enumerate(self.method_data):
             image_dir = self.get_dataset_folder_path(index).replace("\\", "\\\\")
             meta_file = os.path.join(self.get_dataset_folder_path(index),"meta_data.json").replace("\\", "\\\\")
-            toml += f"""
-[[datasets]]
-batch_size = {met["setting"]["batchSize"]}
-bucket_no_upscale = {str(met["setting"]["bucketNoUpscale"]).lower()}
-bucket_reso_steps = {met["setting"]["bucketResoSteps"]}
-enable_bucket = {str(met["setting"]["enableBucket"]).lower()}
-max_bucket_reso = {met["setting"]["maxBucketReso"]}
-min_bucket_reso = {met["setting"]["minBucketReso"]}
-resolution = {met["setting"]["resolution"]}
-color_aug = {str(met["setting"]["colorAug"]).lower()}
-flip_aug = {str(met["setting"]["flipAug"]).lower()}
-keep_tokens = {met["setting"]["keepTokens"]}
-num_repeats = {met["setting"]["numRepeats"]}
-shuffle_caption = {str(met["setting"]["shuffleCaption"]).lower()}
-[[datasets.subsets]]
-image_dir = "{image_dir}"
-metadata_file = "{meta_file}"
-"""
+            toml_new = [
+                "[[datasets]]",
+                f"batch_size = {met['setting']['batchSize']}",
+                f"bucket_no_upscale = {str(met['setting']['bucketNoUpscale']).lower()}",
+                f"bucket_reso_steps = {met['setting']['bucketResoSteps']}",
+                f"enable_bucket = {str(met['setting']['enableBucket']).lower()}",
+                f"max_bucket_reso = {met['setting']['maxBucketReso']}",
+                f"min_bucket_reso = {met['setting']['minBucketReso']}",
+                f"resolution = {met['setting']['resolution']}",
+                f"color_aug = {str(met['setting']['colorAug']).lower()}",
+                f"flip_aug = {str(met['setting']['flipAug']).lower()}",
+                f"keep_tokens = {met['setting']['keepTokens']}",
+                f"num_repeats = {met['setting']['numRepeats']}",
+                f"shuffle_caption = {str(met['setting']['shuffleCaption']).lower()}",
+                f"[[datasets.subsets]]",
+                f"image_dir = '{image_dir}'",
+                f"metadata_file = '{meta_file}'"
+            ]
+            toml_new = list(map(lambda line:f"{line}\n",toml_new))
+
+            toml.extend(toml_new)
         
-        with open(self.toml_file_path,"w") as f:
-            f.write(toml)
+        with open(self.toml_file_path,"w",newline="\n") as f:
+            f.writelines(toml)
 
     # サンプル画像をつくるときのプロンプトファイルを作成
     def make_sample_prompt_file(self,sample:dict[str,Any]) -> None:
+        # トリガーワードの設定
         trigger_word = ""
         if sample.get('triggerWord') != None and sample.get('triggerWord') != "":
             trigger_word = f"{sample['triggerWord']},"
+
+        #大きさ、高さの設定
+        width = sample['width']
+        height = sample['height']
+        if self.lora_data["MainSetting"]["sdType"] == "sdxl":
+            width,height = self.sdxl_sample_image_size(width=width,height=height)
         with open(self.sample_prompt_file_path, 'w') as sample_prompt_file:
             # ここに sample_prompt.txt の内容を書き込む処理を追加
-            sample_prompt_file.write(f"{trigger_word}{sample['positivePrompt']} --n {sample['negativePrompt']} --w {sample['width']} --h {sample['height']} --d 1 --l 7.5 --s {sample['steps']}")
+            sample_prompt_file.write(f"{trigger_word}{sample['positivePrompt']} --n {sample['negativePrompt']} --w {width} --h {height} --d 1 --l 7.5 --s {sample['steps']}")
 
+    # sdxlのサンプル画像の幅と高さを取得
+    def sdxl_sample_image_size(self,width:int,height:int) -> tuple[int, int]:
+        # 拡大したい配列の比率
+        target_ratios = [(1024, 1024), (896, 1152), (832, 1216),(768, 1344),(640, 1536),(1152, 896),(1216, 832),(1344, 768),(1536, 640)]
+
+        # 画像の比率
+        original_ratio = width / height
+
+        # 最も画像の比率に近い配列を選択
+        selected_ratio = min(target_ratios, key=lambda ratio: abs(ratio[0] / ratio[1] - original_ratio))
+
+        return selected_ratio[0],selected_ratio[1]
+            
     # コマンドの実行
-    async def execute_bat_file(self) -> None:
-        result = subprocess.run(self.command_bat_file_path, shell=True)
-        print(result)
+    async def execute_file(self) -> int:
+        # Windowsの場合
+        if is_windows():
+            result = subprocess.Popen(self.command_bat_file_path,shell=True,stdout=subprocess.PIPE)
+            print(result.communicate()[0])
+
+            code = result.wait()
+            return code
+        # それ以外のOSの場合
+        else:
+            result = subprocess.Popen(self.command_sh_file_path, shell=True,stdout=subprocess.PIPE)
+            print(result.communicate()[0])
+
+            code = result.wait()
+            return code
 
     # outputフォルダの中にあるものをすべてLoRAフォルダへ
-    def output_files_to_lora_folder(self,lora_data:dict[str,Any]) -> None:
-        file_name = lora_data['MainSetting']['outputFileName']
+    def output_files_to_lora_folder(self) -> None:
+        file_name = self.lora_data['MainSetting']['outputFileName']
         file_name = re.sub(r".safetensors$","",file_name)
         os.makedirs(os.path.join(self.user_setting_manager.Lora_Folder,file_name),exist_ok=True)
         os.makedirs(os.path.join(self.user_setting_manager.Lora_Folder,file_name,"sample"),exist_ok=True)
@@ -162,19 +203,19 @@ metadata_file = "{meta_file}"
     
     #=============ここからbatファイル関係=============
             
-    def make_bat_file(self,lora_data:dict[str,Any]) -> None:
-        cmd = f"""accelerate launch --num_cpu_threads_per_process {lora_data['performance']['cupThread']} train_network.py ^
---pretrained_model_name_or_path={self.find_file(lora_data['MainSetting']['useModel'],self.user_setting['sd-model-folder'])} ^
+    def make_shell_file(self) -> None:
+        cmd = f"""accelerate launch --num_cpu_threads_per_process {self.lora_data['performance']['cupThread']} {self.get_train_network()} ^
+--pretrained_model_name_or_path={self.find_file(self.lora_data['MainSetting']['useModel'],self.user_setting['sd-model-folder'])} ^
 --output_dir={self.output_folder_path} ^
---output_name={lora_data['MainSetting']['outputFileName']} ^
+--output_name={self.lora_data['MainSetting']['outputFileName']} ^
 --dataset_config={self.toml_file_path} ^
---max_train_epochs={lora_data['MainSetting']['epochs']} ^
---mixed_precision="{lora_data['MainSetting']['mixed_precision']}" ^
+--max_train_epochs={self.lora_data['MainSetting']['epochs']} ^
+--mixed_precision="{self.lora_data['MainSetting']['mixed_precision']}" ^
 --gradient_checkpointing ^
 --sdpa ^
 --max_token_length=225 ^
 --persistent_data_loader_workers ^
---max_data_loader_n_workers={lora_data['performance']['workers']} ^
+--max_data_loader_n_workers={self.lora_data['performance']['workers']} ^
 --logging_dir={self.log_folder_path} ^
 --noise_offset=0.1 ^
 --adaptive_noise_scale=0.01 ^
@@ -182,27 +223,25 @@ metadata_file = "{meta_file}"
 --multires_noise_discount=0.3 ^
 --max_grad_norm=1.0 ^
 --save_model_as=safetensors ^
-{self.use_optimizer_command(lora_data['MainSetting']['optimizer'])} ^
---lr_scheduler={lora_data['learningSetting']['schduler']} ^
---network_args {self.get_net_args(lora_data)} ^
+{self.use_optimizer_command(self.lora_data['MainSetting']['optimizer'])} ^
+--lr_scheduler={self.lora_data['learningSetting']['schduler']} ^
+--network_args {self.get_net_args()} ^
 --max_train_steps=10000 ^
---learning_rate={lora_data['learningSetting']['learningRate']} ^
---unet_lr={lora_data['learningSetting']['textEncoderLr']} ^
---text_encoder_lr={lora_data['learningSetting']['unetLr']} ^
+--learning_rate={self.lora_data['learningSetting']['learningRate']} ^
+--unet_lr={self.lora_data['learningSetting']['textEncoderLr']} ^
+--text_encoder_lr={self.lora_data['learningSetting']['unetLr']} ^
 --lr_scheduler_num_cycles=1 ^
---network_dim={lora_data['learningSetting']['networkDim']} ^
---network_alpha={lora_data['learningSetting']['networkAlpha']} ^
---network_module={self.get_network_module(lora_data['MainSetting']['loraType'].lower())} ^
---training_comment={self.process_string(lora_data['MainSetting']['commentLine'])} ^
---bucket_no_upscale ^
---bucket_reso_steps=64 ^
---optimizer_args {self.get_optimizer_args(lora_data=lora_data)} ^
-{"--weighted_captions " if lora_data["MainSetting"]["optimizer"] == "prodigy" else ""} ^
---lr_warmup_steps={self.lr_warmup_steps_from_rate(lora_data=lora_data)} ^
+--network_dim={self.lora_data['learningSetting']['networkDim']} ^
+--network_alpha={self.lora_data['learningSetting']['networkAlpha']} ^
+--network_module={self.get_network_module(self.lora_data['MainSetting']['loraType'].lower())} ^
+--training_comment={self.process_string(self.lora_data['MainSetting']['commentLine'])} ^
+--optimizer_args {self.get_optimizer_args()} ^
+{"--weighted_captions " if self.lora_data["MainSetting"]["optimizer"] == "prodigy" else ""} ^
+--lr_warmup_steps={self.lr_warmup_steps_from_rate()} ^
 --seed=1234 ^
 {"--cache_latents --cache_latents_to_disk" if self.can_cache_latents() else ""} ^
-{f"--clip_skip=2" if lora_data["MainSetting"]["sdType"] == "sd1.5" else ""} ^
-{"--network_train_unet_only --no_half_vae" if lora_data["MainSetting"]["sdType"] == "sdxl" else ""} ^
+{f"--clip_skip=2" if self.lora_data["MainSetting"]["sdType"] == "sd1.5" else ""} ^
+{"--network_train_unet_only --no_half_vae" if self.lora_data["MainSetting"]["sdType"] == "sdxl" else ""} ^
 {"--cache_text_encoder_outputs --cache_text_encoder_outputs_to_disk" if self.all_prompt_shuffle() == False else ""} ^
 --sample_every_n_epochs=1 ^
 --sample_prompts="{self.sample_prompt_file_path}" ^
@@ -211,12 +250,11 @@ metadata_file = "{meta_file}"
 
         mac_cmd = cmd.split("^")
         mac_cmd = list(map(lambda word:word.strip('\n'),mac_cmd))
-        print(f"MAC_CMD:{mac_cmd}")
         mac_cmd_str = "".join(mac_cmd)
-        with open(self.command_txt_file_path,mode="w",encoding='utf-8', newline='\n') as f:
+        with open(self.command_sh_file_path,mode="w",encoding='utf-8', newline='\n') as f:
             f.writelines([
                 f"cd {self.user_setting['kohyass-folder']} \n"
-                f".\\venv\Scripts\\activate \n"
+                f"source venv/bin/activate \n"
                 f"{mac_cmd_str}"
             ])
         
@@ -247,11 +285,11 @@ metadata_file = "{meta_file}"
             return f"--optimizer_type={optimizer_type}"
         
     # net_argsの取得
-    def get_net_args(self,lora_data:dict[str,Any]) -> str:
-        lora_type = lora_data["MainSetting"]["loraType"].lower()
-        conv_dim = lora_data["netArgs"]["convDim"]
-        conv_alpha = lora_data["netArgs"]["convAlpha"]
-        dropout = lora_data["netArgs"]["dropout"]
+    def get_net_args(self) -> str:
+        lora_type = self.lora_data["MainSetting"]["loraType"].lower()
+        conv_dim = self.lora_data["netArgs"]["convDim"]
+        conv_alpha = self.lora_data["netArgs"]["convAlpha"]
+        dropout = self.lora_data["netArgs"]["dropout"]
         block_size = 16
         if (lora_type == "dylora"):
             return f'"algo=dylora" "conv_dim={conv_dim}" "conv_alpha={conv_alpha}" "dropout={dropout}" "block_size={block_size}"'
@@ -261,6 +299,8 @@ metadata_file = "{meta_file}"
             return f'"algo=locon" "conv_dim={conv_dim}" "conv_alpha={conv_alpha}" "dropout={dropout}"'
         elif (lora_type == "loha"):
             return f'"algo=loha" "conv_dim={conv_dim}" "conv_alpha={conv_alpha}"'
+        elif (lora_type == "lora-c3lier"):
+            return f'"conv_dim={conv_dim}" "conv_alpha={conv_alpha}"'
         else:
             return ''
         
@@ -288,9 +328,9 @@ metadata_file = "{meta_file}"
         return replaced_spaces
     
     # optimizer_argsの設定
-    def get_optimizer_args(self,lora_data:dict[str,Any]) -> str:
-        optimizer_type = lora_data['MainSetting']['optimizer']
-        sd_type = lora_data['MainSetting']['sdType']
+    def get_optimizer_args(self) -> str:
+        optimizer_type = self.lora_data['MainSetting']['optimizer']
+        sd_type = self.lora_data['MainSetting']['sdType']
 
         if optimizer_type == "AdaFactor" and sd_type == "SDXL":
             return f'"scale_parameter=False", "relative_step=False", "warmup_init=False" '
@@ -306,9 +346,9 @@ metadata_file = "{meta_file}"
             return ""
         
     # lr_warmup_stepsの値を取得する
-    def lr_warmup_steps_from_rate(self,lora_data:dict[str,Any]) -> int:
-        lr_warmup_steps:int = lora_data['learningSetting']['lrWarmupSteps']
-        max_train_epochs:int = lora_data['MainSetting']['epochs']
+    def lr_warmup_steps_from_rate(self) -> int:
+        lr_warmup_steps:int = self.lora_data['learningSetting']['lrWarmupSteps']
+        max_train_epochs:int = self.lora_data['MainSetting']['epochs']
         toml_path:str = self.toml_file_path
         images_count:int = self.count_images_recursive()
         # TOMLファイルを読み込む
@@ -349,6 +389,13 @@ metadata_file = "{meta_file}"
         # TOMLファイルを読み込む
         config = toml.load(self.toml_file_path)
         return all(list(map(lambda data:data.get("color_aug") == False,config["datasets"])))
+    
+    # 使用するtrain_networkを取得
+    def get_train_network(self) -> str:
+        if self.lora_data["MainSetting"]["sdType"] == "sdxl":
+            return "sdxl_train_network.py"
+        else:
+            return "train_network.py"
     
     #endregion
             
