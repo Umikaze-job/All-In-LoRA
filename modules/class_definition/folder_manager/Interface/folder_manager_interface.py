@@ -4,8 +4,8 @@ from typing import Any
 from PIL import Image
 from modules.folder_path import get_savefiles
 import json
-from modules.gpu_modules.tagging import do_tagging
 from modules.class_definition.json_manager import SaveFilesSettingImageDataManager
+from modules.gpu_modules.tagging import TaggingManager
 
 """
 FolderManagerParent:画像フォルダの処理をするクラスの親クラス
@@ -65,14 +65,14 @@ class FolderManagerParent:
             f.write(json.dumps(json_data, indent=2))
 
     # タグを生成して変更する
-    async def tags_generate(self,file_name:str,Tagging_Model:Any,lora_data:dict[str,Any]) -> None:
+    async def tags_generate(self,file_name:str,Tagging_Model:TaggingManager | None,lora_data:dict[str,Any]) -> None:
         if self.Image_Data_Manager == False:
             return
         
         file_path = os.path.join(self.folder_path,file_name)
         image = Image.open(file_path)
         # json_data["taggingData"]["---"]["file_name"]の値がfile_nameと同じ名前の連想配列があるとき
-        tags = await do_tagging(image,Tagging_Model,threshold=lora_data["threshold"],character_threshold=lora_data["character_threshold"],exclude_tags=lora_data["ExcludeTags"],trigger_name=lora_data["triggerWord"]) #タグを指定
+        tags = await Tagging_Model.do_tagging(image=image,threshold=lora_data["threshold"],character_threshold=lora_data["character_threshold"],exclude_tags=lora_data["ExcludeTags"],trigger_name=lora_data["triggerWord"])
         
         self.Image_Data_Manager.change_tags(file_name=file_name,tags=tags)
 

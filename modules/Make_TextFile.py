@@ -5,13 +5,12 @@ from .folder_path import get_root_folder_path,get_savefiles,get_localhost_name
 from .file_control import get_savefile_image_paths, get_savefile_image_url_paths, get_setting_file_json,write_setting_file_json,make_random_tags
 import asyncio
 import os
-from .gpu_modules.tagging import ready_model,do_tagging
-from PIL import Image
+from modules.gpu_modules.tagging import TaggingManager
 
 from .class_definition.folder_manager import ImageFolderManager,CharacterTrimmingFolderManager,ThumbnailBaseFolderManager,ThumbnailAfterFolderManager
 from .class_definition.json_manager import SettingLoraDataManager
 
-Tagging_Model = None
+Tagging_Model:TaggingManager | None = None
 
 class Make_TextFile:
     @staticmethod
@@ -25,7 +24,7 @@ class Make_TextFile:
 
             global Tagging_Model
             if Tagging_Model == None:
-                Tagging_Model = ready_model("wd-v1-4-vit-tagger-v2.onnx")
+                Tagging_Model = TaggingManager("wd-v1-4-vit-tagger-v2")
 
             if type_name == "base":
                 manager = ImageFolderManager(folder_name=folder_name)

@@ -16,6 +16,7 @@ import re
 import math
 
 from .class_definition.folder_manager import ImageFolderManager,CharacterTrimmingFolderManager,ThumbnailBaseFolderManager,ThumbnailAfterFolderManager,ShellCommandManager
+from modules.gpu_modules.esrgan_manager import ESRGANManager
 
 # 任意のフォルダの中にある画像ファイルの名前のリスト
 def get_images_list(folder_path:str) -> list[str]:
@@ -222,12 +223,13 @@ class Processing_Images:
 
                 temp_file_name = after_image_manager.additional_named_path_for_temp(file_path=after_image_path,addName=str(index).rjust(3, '0'))
                 im.save(temp_file_name)
-                # 外部ファイルのrembgで拡大する
-                code = await ShellCommandManager.Execute_Resize_Shell(temp_file_name=temp_file_name,temp_path=temp_path,rate=rate)
+                # rembgで拡大する
+                manager = ESRGANManager(image_path=temp_file_name,output_folder_path=temp_path,model_name=re_setting["modelName"],resize_scale=rate)
+                manager.create_resize_image()
 
-                print(f"code:{code}")
-                if code == 1:
-                    raise Exception("拡大時にエラーが発生しました")
+                # print(f"code:{code}")
+                # if code == 1:
+                #     raise Exception("拡大時にエラーが発生しました")
 
                 # リサイズされた画像を取得する
                 out_resize_images = glob.glob(os.path.join(temp_path,"**"))

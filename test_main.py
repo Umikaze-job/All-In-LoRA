@@ -80,9 +80,15 @@ def test_delete_character_trimming_folder_images() -> Any:
 @pytest.mark.tagging
 def test_Tagging_Test() -> Any:
     response = client.post("/api/make-textfile/tagging/write",json={
-        "folderName":"data04",
-        "fileName":"derestefeet03_body000_resize.webp",
-        "type":"deleteAfter"
+        "folderName":"data02",
+        "fileName":"derestefeet01.webp",
+        "type":"base",
+        "lotaData":{
+            "triggerWord":"dereste",
+            "ExcludeTags":"",
+            "threshold":0.35,
+            "character_threshold":0.8
+        }
     })
     assert response.json() == {"message":"OK!!!"}
 

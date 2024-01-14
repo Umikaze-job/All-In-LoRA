@@ -8,6 +8,7 @@ models/tagger_models/**
 !models/face_detect_models/*.txt
 models/face_detect_models/**
 !models/tagger_models/*.txt
+models/esrgan_models
 savefiles/**
 !savefiles/savefile.txt
 tools/**
