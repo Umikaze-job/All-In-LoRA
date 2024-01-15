@@ -3,7 +3,7 @@
   "kohyass-folder": "D:\\ai\\LyCORIS\\sdxl_command\\sd-scripts",
   "lora-folder": "D:\\ai\\LyCORIS\\Lora_data",
   "select-folder-name": "data03",
-  "language": "en",
+  "language": "ja",
   "loraData": {
     "MainSetting": {
       "outputFileName": "",

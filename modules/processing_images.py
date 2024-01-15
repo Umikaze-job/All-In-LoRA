@@ -136,7 +136,7 @@ class Processing_Images:
     
     @staticmethod
     async def Get_Trimming_Models(request:Request) -> dict[str,list[str]]:
-        models = glob.glob(os.path.join(get_root_folder_path(),"models","face_detect_models","**"))
+        models = glob.glob(os.path.join(get_root_folder_path(),"models","face_detect_models","*.pt"))
 
         models = list(map(lambda path:os.path.basename(path),models))
 
