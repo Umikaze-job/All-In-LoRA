@@ -2,8 +2,8 @@
   "sd-model-folder": "D:\\ai\\image\\for_image_models\\sd_models",
   "kohyass-folder": "D:\\ai\\LyCORIS\\sdxl_command\\sd-scripts",
   "lora-folder": "D:\\ai\\LyCORIS\\Lora_data",
-  "select-folder-name": "data03",
-  "language": "ja",
+  "select-folder-name": "data02",
+  "language": "en",
   "loraData": {
     "MainSetting": {
       "outputFileName": "",

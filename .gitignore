@@ -1,15 +1,26 @@
-.vscode/
-venv/
+**/.vscode/**
+**/venv/**
 **/__pycache__
 **/__pycache__/*.pyc
 models/sd_models/**
 !models/sd_models/*.txt
 models/tagger_models/**
-!models/face_detect_models/*.txt
-models/face_detect_models/**
 !models/tagger_models/*.txt
-models/esrgan_models
+models/face_detect_models/**
+!models/face_detect_models/*.txt
+models/esrgan_models/**
+!models/esrgan_models/esrgan_models.txt
+models/caption_models
+!models/caption_models/caption model is here.txt
 savefiles/**
 !savefiles/savefile.txt
 tools/**
+!tools/tool folder.txt
+shell_command/**
+!shell_command/shell command is here.txt
 user_setting.json
+**/.pytest_cache/**
+**/.mypy_cache/**
+outputs/**
+!outputs/*.txt
+test_main.py
