@@ -69,7 +69,10 @@ class Make_Lora:
             for file in files:
                 file_path = os.path.join(root, file)
                 relative_path = os.path.relpath(file_path, folder_path)
-                result.append({"name":file,"path":relative_path})
+                if relative_path.endswith(".safetensors"):
+                    result.append({"name":file,"path":relative_path})
+
+        print(result)
 
         return result
     

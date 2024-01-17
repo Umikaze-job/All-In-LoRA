@@ -7,7 +7,7 @@ import subprocess
 import toml
 from pathlib import Path
 from typing import Any
-from modules.folder_path import get_savefiles
+from modules.folder_path import get_savefiles,get_root_folder_path
 from modules.file_util import get_user_setting_json
 from modules.class_definition.user_setting_manager import UserSettingManager
 import platform
@@ -253,16 +253,16 @@ class FineTuningFolderManager:
         mac_cmd_str = "".join(mac_cmd)
         with open(self.command_sh_file_path,mode="w",encoding='utf-8', newline='\n') as f:
             f.writelines([
-                f"cd {self.user_setting['kohyass-folder']} \n"
-                f"source venv/bin/activate \n"
+                f"cd {self.user_setting['kohyass-folder']} \n",
+                f"source venv/bin/activate \n",
                 f"{mac_cmd_str}"
             ])
         
         with open(self.command_bat_file_path,mode="w",encoding='utf-8', newline='\n') as f:
             f.writelines([
                 f"@echo on \n",
-                f"call cd {self.user_setting['kohyass-folder']} \n"
-                f"call .\\venv\Scripts\\activate \n"
+                f"call cd {self.user_setting['kohyass-folder']} \n",
+                f"call .\\venv\Scripts\\activate \n",
                 f"call {cmd}"
             ])
 

@@ -1,0 +1,4 @@
+lycoris_lora
+lion-pytorch
+dadaptation
+prodigyopt

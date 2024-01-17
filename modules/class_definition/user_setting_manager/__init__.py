@@ -112,9 +112,9 @@ class UserSettingManager:
     # 初期のデータ
     def init_data(self) -> dict[str,Any]:
         return {
-            "sd-model-folder": "",
-            "kohyass-folder": "",
-            "lora-folder": "",
+            "sd-model-folder": os.path.join(get_root_folder_path(),"models","sd_models"),
+            "kohyass-folder": os.path.join(get_root_folder_path(),"tools","sd-scripts"),
+            "lora-folder": os.path.join(get_root_folder_path(),"outputs"),
             "select-folder-name": "",
             "language": "en",
             "loraData": {

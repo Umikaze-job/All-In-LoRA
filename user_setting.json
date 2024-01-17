@@ -1,8 +1,8 @@
 {
-  "sd-model-folder": "D:\\ai\\image\\for_image_models\\sd_models",
-  "kohyass-folder": "D:\\ai\\LyCORIS\\sdxl_command\\sd-scripts",
-  "lora-folder": "D:\\ai\\LyCORIS\\Lora_data",
-  "select-folder-name": "data02",
+  "sd-model-folder": "D:\\ai\\My_AI\\dataset_edit\\All-In-Lora\\All-In-Lora\\models\\sd_models",
+  "kohyass-folder": "D:\\ai\\My_AI\\dataset_edit\\All-In-Lora\\All-In-Lora\\tools\\sd-scripts",
+  "lora-folder": "D:\\ai\\My_AI\\dataset_edit\\All-In-Lora\\All-In-Lora\\outputs",
+  "select-folder-name": "data03",
   "language": "en",
   "loraData": {
     "MainSetting": {
@@ -13,7 +13,7 @@
       "useModel": "",
       "loraType": "LoCon",
       "optimizer": "DAdaptAdam",
-      "mixed_precision": "bf16"
+      "mixed_precision": "fp16"
     },
     "learningSetting": {
       "networkDim": 64,
