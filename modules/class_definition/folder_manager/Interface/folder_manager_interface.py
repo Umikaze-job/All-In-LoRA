@@ -6,6 +6,7 @@ from modules.folder_path import get_savefiles
 import json
 from modules.class_definition.json_manager import SaveFilesSettingImageDataManager
 from modules.gpu_modules.tagging import TaggingManager
+from modules.class_definition.json_manager import SaveFilesSettingImageDataManager
 
 """
 FolderManagerParent:画像フォルダの処理をするクラスの親クラス
@@ -27,6 +28,12 @@ class FolderManagerParent:
         all_files_name = list(map(lambda path:os.path.basename(path),all_files_path))
 
         return list(map(lambda name:os.path.join(self.url_path,name),all_files_name))
+    
+    # タグデータが存在する画像ファイルのURLパスを取得する
+    def get_all_url_paths_with_tags(self,manager:SaveFilesSettingImageDataManager) -> list[str]:
+        url_list = self.get_all_image_paths()
+
+        return list(filter(lambda path:manager.get_tags_data(file_name=os.path.basename(os.path.join(path))) != [""],url_list))
     
     # フォルダ内に存在するすべての画像ファイルのパスを取得する
     def get_all_image_paths(self) -> list[str]:
