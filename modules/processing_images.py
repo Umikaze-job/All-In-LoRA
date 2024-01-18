@@ -3,10 +3,8 @@ from fastapi import Request, UploadFile, Form, File
 import os
 import io
 
-from modules.gpu_modules.edit_images.body_trimming import body_trimming
+from modules.gpu_modules.edit_images import FaceTrimmingManager,BodyTrimmingManager,CharacterTrimmingManager
 from modules.folder_path import get_savefiles,get_localhost_name,get_root_folder_path
-from modules.gpu_modules.edit_images.character_trimming import character_trimming
-from modules.gpu_modules.edit_images.face_trimming import face_trimming
 from PIL import Image
 import glob
 import asyncio
@@ -136,9 +134,13 @@ class Processing_Images:
     
     @staticmethod
     async def Get_Trimming_Models(request:Request) -> dict[str,list[str]]:
-        models = glob.glob(os.path.join(get_root_folder_path(),"models","face_detect_models","*.pt"))
+        models = glob.glob(os.path.join(get_root_folder_path(),"models","face_detect_models","**"))
 
         models = list(map(lambda path:os.path.basename(path),models))
+        models = list(filter(lambda name:name.endswith(".txt") == False,models))
+
+        if len(models) == 0:
+            models = ["anime-face-detect01"]
 
         return {"models":models}
 
@@ -167,7 +169,7 @@ class Processing_Images:
             if type_name == "Character":
                 # ここでCharacter_Trimmingの処理をする
                 ch_setting = setting["Character_Trimming_Data"]
-                img = await character_trimming(img,ch_setting)
+                img = await CharacterTrimmingManager.character_trimming(img,ch_setting)
                 if type(img) == "Exception":
                     raise Exception(img)
                 result_imgset.append(img)
@@ -176,13 +178,15 @@ class Processing_Images:
             elif type_name == "Face":
                 # ここでFace_Trimmingの処理をする
                 ft_setting = setting["Face_Trimming_Data"]
-                result_imgset = await face_trimming(img,base_image_path,folder_name,ft_setting)
+                ft_manager = FaceTrimmingManager(model_name=ft_setting["modelname"])
+                result_imgset = await ft_manager.face_trimming(img,base_image_path,folder_name,ft_setting)
                 after_image_path = after_image_manager.additional_named_path(file_path=after_image_path,addName="_face")
                 after_thumbnail_path = after_thumbnail_manager.additional_named_path(file_path=after_thumbnail_path,addName="_face")
             elif type_name == "Body":
                 # ここでBody_Trimmingの処理をする
                 bd_setting = setting["Body_Trimming_Data"]
-                result_imgset = await body_trimming(img,base_image_path,folder_name,bd_setting)
+                bd_manager = BodyTrimmingManager(model_name=bd_setting["modelname"])
+                result_imgset = await bd_manager.body_trimming(img,base_image_path,folder_name,bd_setting)
                 after_image_path = after_image_manager.additional_named_path(file_path=after_image_path,addName="_body")
                 after_thumbnail_path = after_thumbnail_manager.additional_named_path(file_path=after_thumbnail_path,addName="_body")
             

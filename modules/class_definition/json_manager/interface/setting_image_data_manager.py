@@ -21,7 +21,7 @@ class SaveFilesSettingImageDataManager(SaveFilesSettingJsonManager):
         return json_data["Image_Data"][self.subFolderName]
     
     # タグを変更する
-    def change_tags(self,file_name:str,tags:list[str]):
+    def change_tags(self,file_name:str,tags:list[str]) -> None:
         # file_nameのデータが存在しない場合
         if len(list(filter(lambda data:data.get("file_name") != None and data.get("file_name") == file_name,self.Image_Data))) == 0:
             self.Image_Data.append({"file_name":file_name,"tags":tags})
@@ -41,7 +41,7 @@ class SaveFilesSettingImageDataManager(SaveFilesSettingJsonManager):
         self.__write_image_data()
 
     # タグを消去する
-    def delete_tags(self,file_name:str):
+    def delete_tags(self,file_name:str) -> None:
         # file_nameのデータが存在しない場合
         if len(list(filter(lambda data:data.get("file_name") != None and data.get("file_name") == file_name,self.Image_Data))) == 0:
             return
