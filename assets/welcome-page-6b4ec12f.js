@@ -1,1 +1,0 @@
-import{T as t}from"./template01-8903d691.js";import{d as o,_ as s,r as a,o as n,c,w as r,a as m}from"./index-8f2ce7ae.js";const p=o({setup(){},components:{"base-tem":t}});function _(l,i,f,d,u,x){const e=a("base-tem");return n(),c(e,null,{maintitle:r(()=>[m("Welcome!!!")]),_:1})}const w=s(p,[["render",_]]);export{w as default};

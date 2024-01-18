@@ -1,3 +1,46 @@
 {
-    "sd-model-folder":"D:\\ai\\image\\for_image_models\\sd_models"
+  "sd-model-folder": "D:\\ai\\My_AI\\dataset_edit\\All-In-Lora\\All-In-Lora\\models\\sd_models",
+  "kohyass-folder": "D:\\ai\\My_AI\\dataset_edit\\All-In-Lora\\All-In-Lora\\tools\\sd-scripts",
+  "lora-folder": "D:\\ai\\My_AI\\dataset_edit\\All-In-Lora\\All-In-Lora\\outputs",
+  "select-folder-name": "data03",
+  "language": "en",
+  "loraData": {
+    "MainSetting": {
+      "outputFileName": "",
+      "commentLine": "",
+      "epochs": 4,
+      "sdType": "sd1.5",
+      "useModel": "",
+      "loraType": "LoCon",
+      "optimizer": "DAdaptAdam",
+      "mixed_precision": "fp16"
+    },
+    "learningSetting": {
+      "networkDim": 64,
+      "networkAlpha": 1,
+      "learningRate": 1,
+      "textEncoderLr": 1,
+      "unetLr": 1,
+      "schduler": "cosine",
+      "schedulerOption": 1,
+      "lrWarmupSteps": 10
+    },
+    "netArgs": {
+      "convDim": 64,
+      "convAlpha": 1,
+      "dropout": 0.1
+    },
+    "performance": {
+      "cupThread": 8,
+      "workers": 12
+    },
+    "sampleImage": {
+      "triggerWord": "",
+      "positivePrompt": "masterpiece, best quality, 1girl, looking at viewer, white background",
+      "negativePrompt": "low quality, worst quality, bad anatomy,bad composition, poor, low effort",
+      "width": 600,
+      "height": 900,
+      "steps": 20
+    }
+  }
 }

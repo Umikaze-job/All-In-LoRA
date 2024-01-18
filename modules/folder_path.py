@@ -1,6 +1,6 @@
 import os
 
-def get_root_folder_path():
+def get_root_folder_path() -> str:
     # 現在のファイル（このスクリプト）のディレクトリを取得
     current_script_directory = os.path.dirname(os.path.abspath(__file__))
 
@@ -9,11 +9,11 @@ def get_root_folder_path():
 
     return root_folder_path
 
-def get_savefiles():
+def get_savefiles() -> str:
     return os.path.join(get_root_folder_path(),"savefiles")
 
-def get_fine_tuning_folder(folder_name:str):
+def get_fine_tuning_folder(folder_name:str) -> str:
     return os.path.join(get_root_folder_path(),"savefiles",folder_name,"fine_tuning_folder")
 
-def get_localhost_name():
+def get_localhost_name() -> str:
     return f"http://localhost:8000"

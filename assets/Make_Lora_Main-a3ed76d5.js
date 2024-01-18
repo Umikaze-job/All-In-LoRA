@@ -1,1 +1,0 @@
-import{T as o}from"./template01-a006ca31.js";import{d as n,_ as a,r as s,o as r,c,w as e,a as _}from"./index-b77c9346.js";const m=n({components:{"base-tem":o}});function p(i,f,l,d,u,x){const t=s("base-tem");return r(),c(t,null,{maintitle:e(()=>[_("Make_Lora")]),buttonContents:e(()=>[]),mainContents:e(()=>[]),_:1})}const k=a(m,[["render",p]]);export{k as default};

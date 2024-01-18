@@ -1,10 +1,11 @@
+from typing import Any
 from .folder_path import get_root_folder_path,get_localhost_name,get_savefiles
 import os
 import json
 import glob
 import random
 
-def get_user_setting_json():
+def get_user_setting_json() -> Any:
     file_path = os.path.join(get_root_folder_path(),"user_setting.json")
     with open(file_path,"r") as f:
         return json.load(f)
