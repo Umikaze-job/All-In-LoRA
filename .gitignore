@@ -18,7 +18,6 @@ tools/Real-ESRGAN
 !tools/tool folder.txt
 shell_command/**
 !shell_command/shell command is here.txt
-user_setting.json
 **/.pytest_cache/**
 **/.mypy_cache/**
 outputs/**
