@@ -1,106 +1,122 @@
 import shutil
 from fastapi import Request, UploadFile, Form, File
 import os
-from .folder_path import get_savefiles,get_localhost_name
-from .file_control import get_savefile_image_url_paths,get_thumbnail_url_paths
-from .gpu_modules.edit_images.character_trimming import character_trimming
+import io
+
+from modules.gpu_modules.edit_images import FaceTrimmingManager,BodyTrimmingManager,CharacterTrimmingManager
+from modules.folder_path import get_savefiles,get_localhost_name,get_root_folder_path
 from PIL import Image
+import glob
 import asyncio
 import traceback
+from typing import Any, List
+import re
+import math
+
+from .class_definition.folder_manager import ImageFolderManager,CharacterTrimmingFolderManager,ThumbnailBaseFolderManager,ThumbnailAfterFolderManager,ShellCommandManager
+from modules.gpu_modules.esrgan_manager import ESRGANManager
 
 # 任意のフォルダの中にある画像ファイルの名前のリスト
-def get_images_list(folder_path:str):
+def get_images_list(folder_path:str) -> list[str]:
     image_list = list(filter(lambda f:f.endswith((".jpg", ".jpeg", ".png", ".gif",".webp")),os.listdir(folder_path)))
     return list(map(lambda f:os.path.basename(f),image_list))
 
-# 画像のファイル名が変更されている画像パス
-def add_image_name_path(path,add_name):
-    folder = os.path.dirname(path)
-    # 拡張子を含むファイル名からファイル名と拡張子を分割
-    file_name, file_extension = os.path.splitext(os.path.basename(path))
+# 画像のファイル名を変更する_outから_resizeに変更する
+def image_name_change_to_resize(path:str) -> str:
+    filename,ext = os.path.splitext((os.path.basename(path)))
 
-    return os.path.join(folder,file_name + add_name + file_extension)
+    filename = re.sub(r'_out$', '_resize',filename)
+
+    return f"{filename}{ext}"
+
             
 
 class Processing_Images:
     # 作業フォルダのなかにあるデータセット画像のリストを取得
-    async def Input_Images(request:Request):
+    @staticmethod
+    async def Input_Images(request:Request) -> dict[str,Any]:
         try:
             data = await request.json()
             folder_name = data.get('folderName')
-            image_paths,_ = get_savefile_image_url_paths(folder_name)
-            thumbnail_paths,_ = get_thumbnail_url_paths(folder_name)
+            image_manager = ImageFolderManager(folder_name)
+            base_manager = ThumbnailBaseFolderManager(folder_name)
 
-            return {"data_paths": image_paths,"thumbnail_path":thumbnail_paths}
+            data_paths = image_manager.get_all_url_paths()
+            thumbnail_path = base_manager.get_all_url_paths()
+
+            return {"data_paths": data_paths,"thumbnail_path":thumbnail_path}
         except Exception as e:
             return {"error":traceback.format_exc()}
+        
     # 画像をフォルダに追加する処理
-    async def Set_Input_Images(file: UploadFile = File(...),folderName:str = Form(...)):
+    @staticmethod
+    async def Set_Input_Images(file: UploadFile = File(...),folder_name:str = Form(...)) -> dict[str,str]:
         try:
-            # 画像を追加する
-            upload_path = os.path.join(get_savefiles(),folderName,"images_folder", file.filename)
-            with open(upload_path, "wb") as buffer:
-                shutil.copyfileobj(file.file, buffer)
+            image_manager = ImageFolderManager(folder_name)
+            base_manager = ThumbnailBaseFolderManager(folder_name)
 
-            file_name, extension = os.path.splitext(upload_path)
-            thumbnail_path = os.path.join(get_savefiles(),folderName,"thumbnail_folder","base", file.filename)
-            if extension != ".webp":
-                image = Image.open(upload_path).convert("RGBA")
-                image.save(file_name + ".webp", "webp")
+            # 画像ファイルと名前を取得する
+            # UploadFileからの画像の読み込みは1回しかできない
+            content = await file.read()
+            file_name:str = file.filename
 
-                os.remove(upload_path)
+            img_bin = io.BytesIO(content)
+            image = Image.open(img_bin).convert("RGBA")
 
-                image.thumbnail((600,400))
-
-                thumbnail_folder,_ = os.path.splitext(thumbnail_path)
-                image.save(thumbnail_folder + ".webp",quality=50,format="webp")
-            else:
-                image = Image.open(upload_path).convert("RGBA")
-
-                image.thumbnail((600,400))
-
-                image.save(thumbnail_path,quality=50,format="webp")
+            await image_manager.Input_Image(image,file_name)
+            await base_manager.Input_Image(image,file_name)
 
             return {"message": "OK"}
         except Exception as e:
             return {"error":traceback.format_exc()}
     
     # 画像を削除する
-    async def Delete_Input_Images(request:Request):
+    @staticmethod
+    async def Delete_Input_Images(request:Request) -> dict[str,str]:
         try:
             data = await request.json()
             filename = data.get('fileName')
-            folderName = data.get('folderName')
-            os.remove(os.path.join(get_savefiles(),folderName,"images_folder",filename))
-            os.remove(os.path.join(get_savefiles(),folderName,"thumbnail_folder","base",filename))
+            folder_name = data.get('folderName')
+
+            image_manager = ImageFolderManager(folder_name)
+            base_manager = ThumbnailBaseFolderManager(folder_name)
+
+            image_manager.delete_file(filename)
+            base_manager.delete_file(filename)
             return {"message":f"File Deleted"}
         except Exception as e:
             return {"error":traceback.format_exc()}
         
     # 画像を加工した後の移動先のフォルダの画像の取得
-    async def Output_Input_Images(request:Request):
+    @staticmethod
+    async def Output_Input_Images(request:Request) -> dict[str,Any]:
         try:
             data = await request.json()
             folder_name = data.get('folderName')
-            _,image_paths = get_savefile_image_url_paths(folder_name)
-            _,thumbnail_paths  = get_thumbnail_url_paths(folder_name)
+
+            character_trimming_manager = CharacterTrimmingFolderManager(folder_name)
+            after_manager = ThumbnailAfterFolderManager(folder_name)
+
+            image_paths = character_trimming_manager.get_all_url_paths()
+            thumbnail_paths  = after_manager.get_all_url_paths()
 
             return {"data_paths": image_paths,"thumbnail_path":thumbnail_paths}
         except Exception as e:
             return {"error":traceback.format_exc()}
     
     # 画像を加工した後の画像の削除
-    async def Delete_Output_Images(request:Request):
+    @staticmethod
+    async def Delete_Output_Images(request:Request) -> dict[str,str]:
         data = await request.json()
         folder_name = data.get('folderName')
         file_name = data.get('fileName')
 
-        file_path = os.path.join(get_savefiles(),folder_name,"character_trimming_folder",file_name)
-        thumbnail_path = os.path.join(get_savefiles(),folder_name,"thumbnail_folder","after",file_name)
-
         try:
-            os.remove(file_path)
-            os.remove(thumbnail_path)
+            character_trimming_manager = CharacterTrimmingFolderManager(folder_name)
+            after_manager = ThumbnailAfterFolderManager(folder_name)
+
+            character_trimming_manager.delete_file(file_name)
+            after_manager.delete_file(file_name)
 
             return {"message":"OK!!"}
         except FileNotFoundError:
@@ -108,15 +124,29 @@ class Processing_Images:
         except Exception as e:
             return {"error":traceback.format_exc()}
     # 
-    async def Get_Backup_Images(request:Request):
+    @staticmethod
+    async def Get_Backup_Images(request:Request) -> dict[str,list[Any]]:
         data = await request.json()
         folder_name = data.get('folderName')
         image_list = get_images_list(os.path.join(get_savefiles(),folder_name,"BackUp"))# 画像のパスの一覧
 
         return {"image_paths":[os.path.join(get_localhost_name(),"savefiles",folder_name,"BackUp",name) for name in image_list ]}
     
+    @staticmethod
+    async def Get_Trimming_Models(request:Request) -> dict[str,list[str]]:
+        models = glob.glob(os.path.join(get_root_folder_path(),"models","face_detect_models","**"))
+
+        models = list(map(lambda path:os.path.basename(path),models))
+        models = list(filter(lambda name:name.endswith(".txt") == False,models))
+
+        if len(models) == 0:
+            models = ["anime-face-detect01"]
+
+        return {"models":models}
+
     # トリミングをする
-    async def Start_Trimming(request:Request):
+    @staticmethod
+    async def Start_Trimming(request:Request) -> dict[str,str]:
         try:
             data = await request.json()
             folder_name = data.get('folderName')
@@ -125,40 +155,120 @@ class Processing_Images:
             type_name = data.get("type")
             is_resize = data.get("isResize")
 
-            base_image_path = os.path.join(get_savefiles(),folder_name,"images_folder",file_name)
-            after_image_path = os.path.join(get_savefiles(),folder_name,"character_trimming_folder",file_name)
-            after_thumbnail_path = os.path.join(get_savefiles(),folder_name,"thumbnail_folder","after",file_name)
+            base_image_path = ImageFolderManager(folder_name=folder_name).get_selected_image_path(name=file_name)
+
+            after_image_manager = CharacterTrimmingFolderManager(folder_name=folder_name)
+            after_thumbnail_manager = ThumbnailAfterFolderManager(folder_name=folder_name)
+
+            after_image_path = after_image_manager.get_selected_image_path(name=file_name)
+            after_thumbnail_path = after_thumbnail_manager.get_selected_image_path(name=file_name)
 
             # 画像を開く
             img = Image.open(base_image_path)
+            result_imgset:List[Image.Image] = []
             if type_name == "Character":
                 # ここでCharacter_Trimmingの処理をする
                 ch_setting = setting["Character_Trimming_Data"]
-                img = await character_trimming(img,ch_setting["modelname"],ch_setting["margin"])
+                img = await CharacterTrimmingManager.character_trimming(img,ch_setting)
                 if type(img) == "Exception":
                     raise Exception(img)
-                after_image_path = add_image_name_path(after_image_path,"_character")
-                after_thumbnail_path = add_image_name_path(after_thumbnail_path,"_character")
+                result_imgset.append(img)
+                after_image_path = after_image_manager.additional_named_path(file_path=after_image_path,addName="_character")
+                after_thumbnail_path = after_thumbnail_manager.additional_named_path(file_path=after_thumbnail_path,addName="_character")
             elif type_name == "Face":
                 # ここでFace_Trimmingの処理をする
-                after_image_path = add_image_name_path(after_image_path,"_face")
-                after_thumbnail_path = add_image_name_path(after_thumbnail_path,"_face")
+                ft_setting = setting["Face_Trimming_Data"]
+                ft_manager = FaceTrimmingManager(model_name=ft_setting["modelname"])
+                result_imgset = await ft_manager.face_trimming(img,base_image_path,folder_name,ft_setting)
+                after_image_path = after_image_manager.additional_named_path(file_path=after_image_path,addName="_face")
+                after_thumbnail_path = after_thumbnail_manager.additional_named_path(file_path=after_thumbnail_path,addName="_face")
             elif type_name == "Body":
                 # ここでBody_Trimmingの処理をする
-                after_image_path = add_image_name_path(after_image_path,"_body")
-                after_thumbnail_path = add_image_name_path(after_thumbnail_path,"_body")
+                bd_setting = setting["Body_Trimming_Data"]
+                bd_manager = BodyTrimmingManager(model_name=bd_setting["modelname"])
+                result_imgset = await bd_manager.body_trimming(img,base_image_path,folder_name,bd_setting)
+                after_image_path = after_image_manager.additional_named_path(file_path=after_image_path,addName="_body")
+                after_thumbnail_path = after_thumbnail_manager.additional_named_path(file_path=after_thumbnail_path,addName="_body")
             
-            if is_resize == True:
-                # ここでResizeの処理をする
-                pass
+            # リサイズをする必要がないときは
+            if is_resize == False:
+                for index,im in enumerate(result_imgset):
+                    im.save(after_image_manager.additional_named_path(file_path=after_image_path,addName=str(index).rjust(3, '0')))
 
-            img.save(after_image_path)
+                    im.thumbnail((600,400))
 
-            img.thumbnail((600,400))
+                    im.save(after_thumbnail_manager.additional_named_path(file_path=after_thumbnail_path,addName=str(index).rjust(3, '0')),quality=50)
 
-            img.save(after_thumbnail_path,quality=50)
+                return {"message":"OK!!!"}
+            
+            #リサイズ処理
+            temp_path = os.path.join(get_savefiles(),folder_name,"character_trimming_folder","temp")
+            os.makedirs(temp_path,exist_ok=True)
+
+            for index,im in enumerate(result_imgset):
+                # 拡大する倍率を決める
+                im_width,im_height = im.size
+                re_setting = setting["Resize"]
+
+                print(f"WIDTH,HEIGHT:{im_width},{im_height}")
+                print(f"LENGTH_SIDE:{re_setting['lengthSide'] * 2}")
+                side01 = re_setting["lengthSide"] * 2
+                side02 = im_width + im_height
+                rate = side01 / side02
+                print(f"RATE:{rate}")
+                rate = min(re_setting["rateLimitation"],math.ceil(rate))
+                
+                #倍率が1以下なら普通に保存する
+                if rate <= 1:
+                    im.save(after_image_manager.additional_named_path(file_path=after_image_path,addName=str(index).rjust(3, '0')))
+                    im.thumbnail((600,400))
+                    im.save(after_thumbnail_manager.additional_named_path(file_path=after_thumbnail_path,addName=str(index).rjust(3, '0')),quality=50)
+                    continue
+
+                temp_file_name = after_image_manager.additional_named_path_for_temp(file_path=after_image_path,addName=str(index).rjust(3, '0'))
+                im.save(temp_file_name)
+                # rembgで拡大する
+                manager = ESRGANManager(image_path=temp_file_name,output_folder_path=temp_path,model_name=re_setting["modelName"],resize_scale=rate)
+                manager.create_resize_image()
+
+                # print(f"code:{code}")
+                # if code == 1:
+                #     raise Exception("拡大時にエラーが発生しました")
+
+                # リサイズされた画像を取得する
+                out_resize_images = glob.glob(os.path.join(temp_path,"**"))
+                # out_resize_path = list(filter(lambda path:re.match(r'.*_out\.(webp|png)$', path) != None,out_resize_path))
+                for out_re in out_resize_images:
+                    resize_image = Image.open(out_re)
+                    resize_file_name = f"{os.path.splitext(os.path.basename(out_re))[0]}.webp"
+                    resize_image.save(os.path.join(get_savefiles(),folder_name,"character_trimming_folder",resize_file_name))
+                    
+                    resize_image.thumbnail((600,400))
+
+                    resize_image.save(os.path.join(get_savefiles(),folder_name,"thumbnail_folder","after",resize_file_name),quality=50)
+
+                    os.remove(out_re)
+
+            shutil.rmtree(temp_path)
 
             return {"message":"OK!!!"}
         except Exception as e:
-            print(traceback.format_exc()) 
             return {"error":traceback.format_exc()}
+        
+    # テスト用処理
+    # character_trimming_folderフォルダの中にある画像を消す
+    @staticmethod
+    async def delete_character_trimming_folder_file_Test(request:Request) -> dict[str,str]:
+        data = await request.json()
+        folder_name = data.get('folderName')
+        images = glob.glob(os.path.join(get_savefiles(),folder_name,"character_trimming_folder","*"))
+
+        for item in images:
+            os.remove(item)
+
+        images02 = glob.glob(os.path.join(get_savefiles(),folder_name,"thumbnail_folder","after","*"))
+
+        for item in images02:
+            os.remove(item)
+        print("delete_files")
+        return {"message":"OK!!!"}

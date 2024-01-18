@@ -1,69 +1,65 @@
+import traceback
+from typing import Any
 from fastapi import Request
 import os
-from .folder_path import get_fine_tuning_folder,get_root_folder_path
-from .file_control import get_savefile_image_paths, write_setting_file_json,get_savefile_image_url_paths,get_setting_file_json,get_user_setting_json,get_thumbnail_url_paths
-import subprocess
-import shutil
-from pathlib import Path
-import json
 
-def make_toml(json_data,dataset_folder):
-    methods:[] = json_data["imageLearningSetting"]["methods"]
-    toml = ""
-    for index, met in enumerate(methods):
-        folder = os.path.join(dataset_folder,"image" + str(index).rjust(3, '0'))
-        meta_file = os.path.join(folder,"meta_data.json").replace("\\", "\\\\")
-        folder = folder.replace("\\", "\\\\")
-        toml += f"""
-[[datasets]]
-batch_size = 1
-bucket_no_upscale = true
-bucket_reso_steps = 64
-enable_bucket = true
-max_bucket_reso = 1024
-min_bucket_reso = 128
-resolution = 256
-color_aug = false
-flip_aug = true
-keep_tokens = 2
-num_repeats = 10
-random_crop = false
-shuffle_caption = true
-[[dataset.subsets]]
-image_dir = "{folder}"
-metadata_file = "{meta_file}"
-"""
-    return toml
+from .folder_path import get_fine_tuning_folder
+from .file_control import get_user_setting_json,get_user_setting_json
+from modules.class_definition.folder_manager import ImageFolderManager,CharacterTrimmingFolderManager,ThumbnailBaseFolderManager,ThumbnailAfterFolderManager,FineTuningFolderManager
+from modules.class_definition.json_manager import SettingLearningMethodsManager,SettingLoraDataManager,SaveFilesSettingImageFolderManager,SaveFilesSettingTrimmingFolderManager
 
 class Make_Lora:
-    async def Image_Items(request:Request):
+    @staticmethod
+    async def Image_Items(request:Request) -> dict[str,Any]:
         data = await request.json()
         folder_name = data.get('folderName')
 
-        base,after = get_savefile_image_url_paths(folder_name)
+        base = ImageFolderManager(folder_name=folder_name).get_all_url_paths()
+        after = CharacterTrimmingFolderManager(folder_name=folder_name).get_all_url_paths()
+        base_thumbnail = ThumbnailBaseFolderManager(folder_name=folder_name).get_all_url_paths()
+        after_thumbnail = ThumbnailAfterFolderManager(folder_name=folder_name).get_all_url_paths()
 
-        json_data = get_setting_file_json(folder_name)
+        image_items:dict[str,list[Any]] = {"base":[],"after":[]}
 
-        base_thumbnail,after_thumbnail = get_thumbnail_url_paths(folder_name)
-        return {"base":base,"after":after,"base_thumbnail":base_thumbnail,"after_thumbnail":after_thumbnail,"image_items":json_data["imageLearningSetting"]["image_items"],"methods":json_data["imageLearningSetting"]["methods"],"loraData":json_data["loraData"]}
+        image_items["base"] = SaveFilesSettingImageFolderManager(folder_name=folder_name).get_image_path_and_learning_data(base)
+        image_items["after"] = SaveFilesSettingTrimmingFolderManager(folder_name=folder_name).get_image_path_and_learning_data(after)
+
+        methods = SettingLearningMethodsManager(folder_name=folder_name).get_learning_methods_data()
+        loraData = SettingLoraDataManager(folder_name=folder_name).get_lora_data()
+
+        return {"base":base,"after":after,"base_thumbnail":base_thumbnail,
+                "after_thumbnail":after_thumbnail,"image_items":image_items,
+                "methods":methods,"loraData":loraData}
     
-    async def Save_Data(request:Request):
+    @staticmethod
+    async def Save_Data(request:Request) -> dict[str,str]:
         data = await request.json()
         folder_name = data.get('folderName')
         image_items = data.get('ImageItems')
         methods = data.get('methods')
         loraData = data.get('loraData')
 
-        json_data = get_setting_file_json(folder_name)
+        # 画像に与えられた学習方法をデータにして保存する
+        base_manager = SaveFilesSettingImageFolderManager(folder_name=folder_name)
+        after_manager = SaveFilesSettingTrimmingFolderManager(folder_name=folder_name)
 
-        json_data["imageLearningSetting"] = {"image_items":image_items,"methods":methods}
-        json_data["loraData"] = loraData
+        for data in image_items["base"]:
+            base_manager.set_learning_method_to_data(file_name=data["image_name"],method_name=data["method_name"])
 
-        write_setting_file_json(folder_name,json_data)
+        for data in image_items["after"]:
+            after_manager.set_learning_method_to_data(file_name=data["image_name"],method_name=data["method_name"])
+
+        # 学習方法を保存する
+        LM_manager = SettingLearningMethodsManager(folder_name=folder_name)
+        LM_manager.set_learning_methods_data(data=methods)
+        # Lora情報を保存する
+        Lora_manager = SettingLoraDataManager(folder_name=folder_name)
+        Lora_manager.set_lora_data(loraData)
 
         return {"message":"OK!!!"}
     
-    async def Sd_Model(request:Request):
+    @staticmethod
+    async def Sd_Model(request:Request) -> list[dict[str,Any]]:
         json_data = get_user_setting_json()
         folder_path = json_data["sd-model-folder"]
 
@@ -73,93 +69,99 @@ class Make_Lora:
             for file in files:
                 file_path = os.path.join(root, file)
                 relative_path = os.path.relpath(file_path, folder_path)
-                result.append({"name":file,"path":relative_path})
+                if relative_path.endswith(".safetensors"):
+                    result.append({"name":file,"path":relative_path})
+
+        print(result)
 
         return result
     
-    async def Press_Start_Lora(request:Request):
+    @staticmethod
+    async def Press_Make_Command(request:Request) -> dict[str,str]:
+        try:
+            data = await request.json()
+            folder_name = data.get('folderName')
+
+            base_image_manager = ImageFolderManager(folder_name=folder_name)
+            after_image_manager = CharacterTrimmingFolderManager(folder_name=folder_name)
+
+            base_setting_manager = SaveFilesSettingImageFolderManager(folder_name=folder_name)
+            after_setting_manager = SaveFilesSettingTrimmingFolderManager(folder_name=folder_name)
+
+            learning_method_set = SettingLearningMethodsManager(folder_name=folder_name).get_learning_methods_data()
+            lora_data_set = SettingLoraDataManager(folder_name=folder_name).get_lora_data()
+
+            fine_tuning_manager = FineTuningFolderManager(folder_name=folder_name,lora_data=lora_data_set,method_data=learning_method_set)
+
+            fine_tuning_manager.output_files_to_lora_folder()
+
+            #? 一旦、fine_tuning_folderの中身をすべて削除する。
+            fine_tuning_manager.folder_init()
+            #? フォルダとファイルを作成する
+            fine_tuning_manager.make_all_folders(img_folder_count=len(learning_method_set))
+
+            #? 画像フォルダを移動させる
+            for index,LM in enumerate(learning_method_set):
+                # base
+                # 学習方法が指定されている画像のパスのリストを取得
+                base_images = base_setting_manager.get_image_data_with_learning_method(method=LM["name"])
+                base_images_name = list(map(lambda data:data["file_name"],base_images))
+                base_images_path = list(filter(lambda path:os.path.basename(path) in base_images_name,base_image_manager.get_all_image_paths()))
+
+                # after
+                after_images = after_setting_manager.get_image_data_with_learning_method(method=LM["name"])
+                after_images_name = list(map(lambda data:data["file_name"],after_images))
+                after_images_path = list(filter(lambda path:os.path.basename(path) in after_images_name,after_image_manager.get_all_image_paths()))
+
+                #移動する
+                fine_tuning_manager.move_images_to_folder(folder_index=index,image_paths=base_images_path + after_images_path)
+
+                #meta_data.jsonを作る
+                for data in base_images:
+                    data["file_path"] = base_image_manager.get_selected_image_path(data["file_name"])
+
+                for data in after_images:
+                    data["file_path"] = after_image_manager.get_selected_image_path(data["file_name"])
+
+                fine_tuning_manager.make_meta_data(folder_index=index,images_data=base_images + after_images)
+
+            # tomlファイルを作成する
+            fine_tuning_manager.make_toml_file()
+
+            # sample_prompt.txtを作成する
+            fine_tuning_manager.make_sample_prompt_file(sample=lora_data_set["sampleImage"])
+
+            # shellファイルを作成する
+            fine_tuning_manager.make_shell_file()
+        
+            # shellファイルの実行
+            code = await fine_tuning_manager.execute_file()
+            
+            #エラーが発生した場合
+            if code == 1:
+               return {"message":"error"} 
+
+            fine_tuning_manager.output_files_to_lora_folder()
+
+            return {"message":"OK!!!"}
+        except Exception as e:
+            return {"error":traceback.format_exc()}
+    
+    @staticmethod
+    async def test_moveLoRa(request:Request) -> dict[str,str]:
         data = await request.json()
         folder_name = data.get('folderName')
+        lora_name = data.get('loraName')
 
-        json_data = get_setting_file_json(folder_name)
-
-        #? 一旦、fine_tuning_folderの中身をすべて削除する。
         main_folder = get_fine_tuning_folder(folder_name)
-        shutil.rmtree(main_folder)
-        #? フォルダとファイルを作成する
 
-        #? データセットの画像の名前、メソッド名、パスが入った連想配列を作成する。
-        base_images = []
-        after_images = []
-        base_images = json_data["imageLearningSetting"]["image_items"]["base"] #?{"image_name": str, "method_name": str}
-        after_images = json_data["imageLearningSetting"]["image_items"]["after"]
+        for curDir,dir,files in os.walk(os.path.join(main_folder,"output")):
+            safetensor = list(filter(lambda file:file.endswith(".safetensors"),files))
 
-        for data in base_images:
-            data["path"] = os.path.join(get_root_folder_path(),"savefiles",folder_name,"images_folder",data["image_name"])
-            taggingData = [tagdata for tagdata in json_data["taggingData"]["base"] if tagdata.get("image_name") == data["image_name"]]
-            if len(taggingData) != 0:
-                if taggingData[0].get("caption") != None and taggingData[0].get("caption") != "":
-                    data["caption"] = taggingData[0].get("caption")
-                if taggingData[0].get("tag") != None and len(taggingData[0].get("tag")) != 0:
-                    data["tag"] = taggingData[0].get("tag")
+            print(safetensor)
+            if len(safetensor) != 0:
+                print(curDir)
+                break
 
-        for data in after_images:
-            data["path"] = os.path.join(get_root_folder_path(),"savefiles",folder_name,"character_trimming_folder",data["image_name"])
-            taggingData = [tagdata for tagdata in json_data["taggingData"]["after"] if tagdata.get("image_name") == data["image_name"]]
-            if len(taggingData) != 0:
-                if taggingData[0].get("caption") != None and taggingData[0].get("caption") != "":
-                    data["caption"] = taggingData[0].get("caption")
-                if taggingData[0].get("tag") != None and len(taggingData[0].get("tag")) != 0:
-                    data["tag"] = taggingData[0].get("tag")
-        
-        #? datasetフォルダを作成
-        dataset_folder = os.path.join(main_folder,"dataset")
-        Path(dataset_folder).mkdir(parents=True, exist_ok=True)
-        #? methodsの数だけ中身のフォルダを増やす
-        sub_dataset_folders = []
-        for index,item in enumerate(json_data["imageLearningSetting"]["methods"]):
-            folder = os.path.join(dataset_folder,"image" + str(index).rjust(3, '0'))
-            Path(folder).mkdir(parents=True, exist_ok=True)
-            sub_dataset_folders.append(folder)
-            #? フォルダに画像をコピーしていれる
-            name = item["name"] #メソッド名
-            #? base_images,after_imagesの中にある連想配列からmethod_nameキーにさっきのメソッド名が含まれてるもののみを残した配列を作る
-            base = [image for image in base_images if image.get("method_name") == name]
-            after = [image for image in after_images if image.get("method_name") == name]
+        return {"message":"OK!!!"}
 
-            json_write = {}
-
-            for img in base + after:
-                shutil.copy(img["path"],folder)
-                data = {}
-                if img.get("caption") != None:
-                    data["caption"] = img.get("caption")
-                if img.get("tag") != None:
-                    data["tag"] = ', '.join(img.get("tag"))
-
-                if data != {}:
-                    json_write[img["path"]] = data
-
-            #? メタデータに書き込む
-            with open(os.path.join(folder,"meta_data.json"),"w") as f:
-                f.write(json.dumps(json_write, indent=2))
-                
-
-        log_folder = os.path.join(main_folder,"log")
-        Path(log_folder).mkdir(parents=True, exist_ok=True)
-
-        output_folder = os.path.join(main_folder,"output")
-        Path(output_folder).mkdir(parents=True, exist_ok=True)
-
-        # setting.toml ファイルを作成
-        setting_file_path = os.path.join(main_folder, 'setting.toml')
-        with open(setting_file_path, 'w') as setting_file:
-            # ここに setting.toml の内容を書き込む処理を追加
-            setting_file.write(make_toml(json_data,dataset_folder))
-
-        # sample_prompt.txt ファイルを作成
-        sample_prompt_file_path = os.path.join(main_folder, 'sample_prompt.txt')
-        with open(sample_prompt_file_path, 'w') as sample_prompt_file:
-            sample = json_data["loraData"]["sampleImage"]
-            # ここに sample_prompt.txt の内容を書き込む処理を追加
-            sample_prompt_file.write(f"{sample['positivePrompt']} --n {sample['negativePrompt']} --w {sample['width']} --h {sample['height']} --d 1 --l 7.5 --s {sample['steps']}")
