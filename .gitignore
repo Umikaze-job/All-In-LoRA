@@ -14,7 +14,7 @@ models/caption_models
 !models/caption_models/caption model is here.txt
 savefiles/**
 !savefiles/savefile.txt
-tools/Real-ESRGAN
+
 !tools/tool folder.txt
 shell_command/**
 !shell_command/shell command is here.txt
