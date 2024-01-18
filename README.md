@@ -37,6 +37,9 @@ Give unrestricted script access to powershell so venv can work:
 1. Install `CUDA 11.8` + `CUDNN`.
 2. Enter the following command to create a python virtual environment:
 ```
+git clone https://github.com/Umikaze-job/All-In-LoRA
+cd All-In-LoRA
+
 py -3.10 -m venv venv
 .\venv\Scripts\activate
 
