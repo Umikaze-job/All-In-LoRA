@@ -50,6 +50,7 @@ cd tools
 git clone https://github.com/kohya-ss/sd-scripts.git
 cd sd-scripts
 
+deactivate
 py -3.10 -m venv venv
 .\venv\Scripts\activate
 
@@ -80,10 +81,12 @@ note: Some user reports ValueError: fp16 mixed precision requires a GPU is occur
 ```
 cd ../../
 pip install -r requirements-kohyass.txt
+deactivate
 ```
 
 5.Run the `main.py` on All-In-LoRA
 ```
+.\venv\Scripts\activate
 python main.py
 ```
 
