@@ -90,6 +90,11 @@ deactivate
 python main.py
 ```
 
+6. Type the following command in your browser's address bar
+```
+http://127.0.0.1:8000
+```
+
 ## Documentation
 
 The documentation exists in the application and can be found here.
