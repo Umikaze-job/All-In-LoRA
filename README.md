@@ -43,11 +43,8 @@ py -3.10 -m venv venv
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
 pip install -r requirements.txt
-deactive
 ```
-3. Install sd-scripts on the `tools` folder and create a python virtual environment for sd-scripts.
-If you have already installed sd-scripts and created a virtual environment named "venv", you can use the sd-scripts as is.
-If you set up the sd-scripts path in the application, you can use it as usual:
+3. Install sd-scripts on the `tools` folder and create a python virtual environment for sd-scripts:
 ```
 cd tools
 git clone https://github.com/kohya-ss/sd-scripts.git
@@ -78,16 +75,14 @@ Answers to accelerate config:
 note: Some user reports ValueError: fp16 mixed precision requires a GPU is occurred in training. In this case, answer 0 for the 6th question: What GPU(s) (by id) should be used for training on this machine as a comma-separated list? [all]:
 
 (Single GPU with id 0 will be used.)
-1. Install additional required packages in sd-scripts
+4. Install additional required packages in sd-scripts
 ```
 cd ../../
 pip install -r requirements-kohyass.txt
-deactive
 ```
 
 5.Run the `main.py` on All-In-LoRA
 ```
-.\venv\Scripts\activate
 python main.py
 ```
 
