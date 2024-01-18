@@ -22,5 +22,5 @@ shell_command/**
 **/.mypy_cache/**
 outputs/**
 !outputs/*.txt
-test_main.py
+test_main_02.py
 user_setting.json
