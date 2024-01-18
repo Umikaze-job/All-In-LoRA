@@ -75,6 +75,7 @@ Answers to accelerate config:
 note: Some user reports ValueError: fp16 mixed precision requires a GPU is occurred in training. In this case, answer 0 for the 6th question: What GPU(s) (by id) should be used for training on this machine as a comma-separated list? [all]:
 
 (Single GPU with id 0 will be used.)
+
 4. Install additional required packages in sd-scripts
 ```
 cd ../../
