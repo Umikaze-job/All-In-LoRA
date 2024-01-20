@@ -67,7 +67,7 @@ setting.jsonの中身
         dropout:number,
     },
     performance:{
-        cupThread:number,
+        cpuThreads:number,
         workers:number,
     },
     sampleImage:{

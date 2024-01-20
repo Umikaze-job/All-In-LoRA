@@ -144,6 +144,14 @@ class Welcome_Page:
             # 言語の取得
             language = manager.User_Language
 
+            # usersetting.jsonの訂正
+            lora_data = manager.Init_LoraData
+            # lora_data["performance"]["cupThread"]をlora_data["performance"]["cpuThreads"]に修正
+            if lora_data["performance"].get("cupThread") != None:
+                lora_data["performance"]["cpuThreads"] = lora_data["performance"]["cupThread"]
+
+            manager.Init_LoraData = lora_data
+
             # フォルダ名の取得
             return {"isfolder":isfolder,"folderName":manager.Select_Folder_Name,"language":language}
         except Exception as e:

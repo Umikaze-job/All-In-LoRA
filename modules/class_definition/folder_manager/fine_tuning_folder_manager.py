@@ -204,7 +204,7 @@ class FineTuningFolderManager:
     #=============ここからbatファイル関係=============
             
     def make_shell_file(self) -> None:
-        cmd = f"""accelerate launch --num_cpu_threads_per_process {self.lora_data['performance']['cupThread']} {self.get_train_network()} ^
+        cmd = f"""accelerate launch --num_cpu_threads_per_process {self.lora_data['performance']['cpuThreads']} {self.get_train_network()} ^
 --pretrained_model_name_or_path={self.find_file(self.lora_data['MainSetting']['useModel'],self.user_setting['sd-model-folder'])} ^
 --output_dir={self.output_folder_path} ^
 --output_name={self.lora_data['MainSetting']['outputFileName']} ^

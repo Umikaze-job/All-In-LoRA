@@ -144,7 +144,7 @@ class UserSettingManager:
                     "dropout": 0.1
                 },
                 "performance": {
-                    "cupThread": 8,
+                    "cpuThreads": 8,
                     "workers": 12
                 },
                 "sampleImage": {
