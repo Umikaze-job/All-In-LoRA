@@ -80,6 +80,13 @@ note: Some user reports ValueError: fp16 mixed precision requires a GPU is occur
 
 (Single GPU with id 0 will be used.)
 
+##### Optional: Use `bitsandbytes` (8bit optimizer)
+
+Please install the Windows version from the command below.
+```
+python -m pip install bitsandbytes==0.41.1 --prefer-binary --extra-index-url=https://jllllll.github.io/bitsandbytes-windows-webui
+```
+
 4. Install additional required packages in sd-scripts
 ```
 cd ../../

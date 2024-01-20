@@ -206,7 +206,7 @@ async def Make_Lora_Sd_Model(request:Request) -> Any:
     return await Make_Lora.Sd_Model(request)
 #endregion
 
-# Test用のパス
+# region Test用のパス
 @app.post('/test/processing-images/delete-character_trimming_folder-images')
 async def delete_character_trimming_folder_file_Test(request:Request) -> Any:
     return await Processing_Images.delete_character_trimming_folder_file_Test(request)
@@ -220,3 +220,5 @@ if __name__ == "__main__" and platform.uname().system == "Windows":
     set_event_loop(ProactorEventLoop())
     server = Server(config=Config(app=app))
     get_event_loop().run_until_complete(server.serve())
+
+# endregion
