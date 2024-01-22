@@ -13,6 +13,10 @@ class SettingLoraDataManager(SaveFilesSettingJsonManager):
     def get_lora_data(self) -> dict[str,Any]:
         json_data = super().get_setting_file_json()
 
+        # v1.0.0のデータを使用している人用
+        if json_data["loraData"]["performance"].get("cupThread") != None:
+            json_data["loraData"]["performance"]["cpuThreads"] = json_data["loraData"]["performance"]["cupThread"]
+
         return json_data["loraData"]
     
     @property
@@ -31,6 +35,10 @@ class SettingLoraDataManager(SaveFilesSettingJsonManager):
 
     def save_lora_data(self) -> None:
         json_data = super().get_setting_file_json()
+
+        # v1.0.0のデータを使用している人用
+        if json_data["loraData"]["performance"].get("cupThread") != None:
+            json_data["loraData"]["performance"]["cpuThreads"] = json_data["loraData"]["performance"]["cupThread"]
 
         json_data["loraData"] = self.LoraData
 
