@@ -46,6 +46,7 @@ py -3.10 -m venv venv
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
 pip install -r requirements.txt
+deactivate
 ```
 3. Install sd-scripts on the `tools` folder and create a python virtual environment for sd-scripts:
 ```
@@ -53,7 +54,6 @@ cd tools
 git clone https://github.com/kohya-ss/sd-scripts.git
 cd sd-scripts
 
-deactivate
 py -3.10 -m venv venv
 .\venv\Scripts\activate
 
