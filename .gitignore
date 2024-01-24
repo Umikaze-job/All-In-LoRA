@@ -24,3 +24,4 @@ outputs/**
 !outputs/*.txt
 test_main_02.py
 user_setting.json
+savefiles_legacy

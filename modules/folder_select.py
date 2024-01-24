@@ -12,8 +12,8 @@ class Folder_Select:
         try:
             data = await request.json()
             folder_name = data.get('name')
-            manager = SaveFileManager(folder_name)
-            manager.make_folder()
+            manager = SaveFileManager()
+            manager.make_folder(folder_name=folder_name)
             return {"message": "Folder Created!!!"}
         except DuplicateException as e:
             return {"error":"Duplicate names"}
@@ -34,13 +34,10 @@ class Folder_Select:
             data = await request.json()
             before_name = data.get('beforeName')
             after_name = data.get('afterName')
-            manager = SaveFileManager(before_name)
-            manager.rename_folder(after_name)
+            folder_id = data.get('folderid')
+            manager = SaveFileManager(folder_id=folder_id)
+            manager.rename_folder(before_name,after_name)
             return {"message": "ok"}
-        except DuplicateException as e:
-            return {"error":"Duplicate names"}
-        except FileNotFoundError:
-            return {"error":"File Not Found"}
         except Exception as e:
             return {"error":traceback.format_exc()}
             
