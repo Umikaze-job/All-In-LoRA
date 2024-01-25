@@ -153,6 +153,6 @@ class Welcome_Page:
             manager.Init_LoraData = lora_data
 
             # フォルダ名の取得
-            return {"isfolder":isfolder,"folderName":manager.Select_Folder_Name,"language":language}
+            return {"isfolder":isfolder,"folderName":manager.Select_Folder_Name["name"],"folderId":manager.Select_Folder_Name["id"],"language":language}
         except Exception as e:
             return {"error":traceback.format_exc()}

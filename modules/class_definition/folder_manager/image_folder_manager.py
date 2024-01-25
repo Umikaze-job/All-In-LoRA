@@ -29,16 +29,16 @@ class ImageFolderManager(FolderManagerParent):
         return super().get_all_url_paths()
 
     # 画像をフォルダに入力する
-    async def Input_Image(self,image:Image.Image,file_name:str) -> None:
+    async def Input_Image(self,image:Image.Image,file_name:str,image_format:str) -> None:
         await super().Input_Image(image,file_name)
         #webpファイルに変える
-        my_file_name = os.path.splitext(os.path.basename(file_name))[0]
+        my_file_name = file_name
 
         #一旦保存
-        image.save(os.path.join(self.folder_path,f"{my_file_name}.webp"),format="webp")
+        image.save(os.path.join(self.folder_path,f"{my_file_name}.{image_format}"),format=image_format)
 
         # 入力画像を読み込み(-1指定でαチャンネルも読み取る)
-        img = cv2.imread(os.path.join(self.folder_path,f"{my_file_name}.webp"), cv2.IMREAD_UNCHANGED)
+        img = cv2.imread(os.path.join(self.folder_path,f"{my_file_name}.{image_format}"), cv2.IMREAD_UNCHANGED)
         # αチャンネルが0となるインデックスを取得
         # ex) ([0, 1, 3, 3, ...],[2, 4, 55, 66, ...])
         # columnとrowがそれぞれ格納されたタプル(長さ２)となっている
@@ -51,7 +51,7 @@ class ImageFolderManager(FolderManagerParent):
             alpha_nonzero_indices = np.where((img[:, :, 3] > 0) & (img[:, :, 3] < 255))
             img[alpha_nonzero_indices[:2]] = img[alpha_nonzero_indices[:2]] * (255 / img[alpha_nonzero_indices[0], alpha_nonzero_indices[1], 3])[:, None]
             # 出力
-            cv2.imwrite(os.path.join(self.folder_path, f"{my_file_name}.webp"), img)
+            cv2.imwrite(os.path.join(self.folder_path, f"{my_file_name}.{image_format}"), img)
 
 
             

@@ -19,6 +19,13 @@ class Make_Lora:
         base_thumbnail = ThumbnailBaseFolderManager(folder_name=folder_name).get_all_url_paths()
         after_thumbnail = ThumbnailAfterFolderManager(folder_name=folder_name).get_all_url_paths()
 
+        #displayed_nameのデータを加える
+        savefile_setting_base_manager = SaveFilesSettingImageFolderManager(folder_name)
+        base_data = savefile_setting_base_manager.get_image_data_with_displayed_name(base)
+
+        savefile_setting_after_manager = SaveFilesSettingTrimmingFolderManager(folder_name)
+        after_data = savefile_setting_after_manager.get_image_data_with_displayed_name(after)
+
         image_items:dict[str,list[Any]] = {"base":[],"after":[]}
 
         image_items["base"] = SaveFilesSettingImageFolderManager(folder_name=folder_name).get_image_path_and_learning_data(base)
@@ -27,7 +34,7 @@ class Make_Lora:
         methods = SettingLearningMethodsManager(folder_name=folder_name).get_learning_methods_data()
         loraData = SettingLoraDataManager(folder_name=folder_name).get_lora_data()
 
-        return {"base":base,"after":after,"base_thumbnail":base_thumbnail,
+        return {"base":base_data,"after":after_data,"base_thumbnail":base_thumbnail,
                 "after_thumbnail":after_thumbnail,"image_items":image_items,
                 "methods":methods,"loraData":loraData}
     

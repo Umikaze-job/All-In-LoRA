@@ -4,6 +4,7 @@ import os
 import io
 
 from modules.gpu_modules.edit_images import FaceTrimmingManager,BodyTrimmingManager,CharacterTrimmingManager
+from modules.class_definition.json_manager import SaveFilesSettingImageFolderManager,SaveFilesSettingTrimmingFolderManager
 from modules.folder_path import get_savefiles,get_localhost_name,get_root_folder_path
 from PIL import Image
 import glob
@@ -37,14 +38,16 @@ class Processing_Images:
     async def Input_Images(request:Request) -> dict[str,Any]:
         try:
             data = await request.json()
-            folder_name = data.get('folderName')
-            image_manager = ImageFolderManager(folder_name)
-            base_manager = ThumbnailBaseFolderManager(folder_name)
+            folder_id = data.get('folderName')
+            image_manager = ImageFolderManager(folder_id)
+            base_manager = ThumbnailBaseFolderManager(folder_id)
 
             data_paths = image_manager.get_all_url_paths()
             thumbnail_path = base_manager.get_all_url_paths()
 
-            return {"data_paths": data_paths,"thumbnail_path":thumbnail_path}
+            setting_image_data_manager = SaveFilesSettingImageFolderManager(folder_id)
+
+            return {"data_paths": data_paths,"thumbnail_path":thumbnail_path,"displayed_name":setting_image_data_manager.displayed_name_list}
         except Exception as e:
             return {"error":traceback.format_exc()}
         
@@ -63,8 +66,13 @@ class Processing_Images:
             img_bin = io.BytesIO(content)
             image = Image.open(img_bin).convert("RGBA")
 
-            await image_manager.Input_Image(image,file_name)
-            await base_manager.Input_Image(image,file_name)
+            image_format = "webp"
+
+            setting_manager = SaveFilesSettingImageFolderManager(folder_name)
+            folder_id = setting_manager.input_image_init(file_name,image_format)
+
+            await image_manager.Input_Image(image,folder_id,image_format)
+            await base_manager.Input_Image(image,folder_id,image_format)
 
             return {"message": "OK"}
         except Exception as e:
@@ -83,6 +91,10 @@ class Processing_Images:
 
             image_manager.delete_file(filename)
             base_manager.delete_file(filename)
+
+            setting_manager = SaveFilesSettingImageFolderManager(folder_name)
+            setting_manager.delete_image_data(filename)
+
             return {"message":f"File Deleted"}
         except Exception as e:
             return {"error":traceback.format_exc()}
@@ -100,7 +112,9 @@ class Processing_Images:
             image_paths = character_trimming_manager.get_all_url_paths()
             thumbnail_paths  = after_manager.get_all_url_paths()
 
-            return {"data_paths": image_paths,"thumbnail_path":thumbnail_paths}
+            setting_image_data_manager = SaveFilesSettingTrimmingFolderManager(folder_name)
+
+            return {"data_paths": image_paths,"thumbnail_path":thumbnail_paths,"displayed_name":setting_image_data_manager.displayed_name_list}
         except Exception as e:
             return {"error":traceback.format_exc()}
     
@@ -117,6 +131,9 @@ class Processing_Images:
 
             character_trimming_manager.delete_file(file_name)
             after_manager.delete_file(file_name)
+
+            setting_manager = SaveFilesSettingTrimmingFolderManager(folder_name)
+            setting_manager.delete_image_data(file_name)
 
             return {"message":"OK!!"}
         except FileNotFoundError:

@@ -110,7 +110,7 @@ class FolderManagerParent:
             imgtag = data["imgtag"].split(",")
             imgtag = list(map(lambda st:st.strip(),imgtag))
 
-            self.Image_Data_Manager.change_tags(file_name=data["file_name"],tags=imgtag)
+            self.Image_Data_Manager.change_tags(file_name=os.path.basename(data["image_url"]),tags=imgtag)
 
     # 指定した画像のタグを取得
     def get_Image_tags(self,file_name:str) -> list[str]:

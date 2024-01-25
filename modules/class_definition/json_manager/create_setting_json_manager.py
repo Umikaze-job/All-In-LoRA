@@ -1,10 +1,6 @@
 import datetime
 from modules.class_definition.json_manager.interface.savefiles_setting_manager import SaveFilesSettingJsonManager
 from modules.class_definition.user_setting_manager import UserSettingManager
-import random
-import string
-import glob
-import os
 """
 SaveFilesSettingCreateManager:setting.jsonを作るためだけのマネージャー
 """
@@ -29,7 +25,8 @@ class SaveFilesSettingCreateManager(SaveFilesSettingJsonManager):
             # "base","after"の各要素の中身:{"file_name":"","tags":"","caption":"","method":""}
             "Image_Data":{"base":[],"after":[]},
             "LearningMethods":[],
-            "loraData":user_manager.Init_LoraData
+            "loraData":user_manager.Init_LoraData,
+            "version":"1.0.3"
         }
 
         self.write_setting_file_json(settings_data)

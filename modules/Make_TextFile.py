@@ -8,7 +8,7 @@ import os
 from modules.gpu_modules.tagging import TaggingManager
 
 from .class_definition.folder_manager import ImageFolderManager,CharacterTrimmingFolderManager,ThumbnailBaseFolderManager,ThumbnailAfterFolderManager
-from .class_definition.json_manager import SettingLoraDataManager
+from .class_definition.json_manager import SettingLoraDataManager,SaveFilesSettingImageFolderManager,SaveFilesSettingTrimmingFolderManager
 
 Tagging_Model:TaggingManager | None = None
 
@@ -92,6 +92,7 @@ class Make_TextFile:
         return {"base_images":base_manager.all_Images_has_tags(),"after_images":after_manager.all_Images_has_tags()}
     
     @staticmethod
+    # タグ編集画面のデータ取得
     async def EditTag_GetData(request:Request) -> dict[str,Any]:
         data = await request.json()
         folder_name = data.get('folderName')
@@ -106,26 +107,41 @@ class Make_TextFile:
 
         base:list[dict[str,Any]] = []
         for url_data in base_url_data:
-            print(f"URL_DATA:{url_data}")
             file_name = os.path.basename(url_data)
 
+            # サムネイルのURLを取得
             thumbnail_url_list = list(filter(lambda path:os.path.basename(path) == file_name,base_thumbnail_manager.get_all_url_paths()))
             if len(thumbnail_url_list) == 0:
                 raise Exception("通常の画像とサムネイル画像のセットが欠けています")
             thumbnail_url = thumbnail_url_list[0]
 
-            base.append({"image_path":url_data,"thumbnail_path":thumbnail_url,"file_name":file_name,"tag":base_manager.get_Image_tags(file_name)})
+            #表示名を取得する
+            setting_image_data_manager = SaveFilesSettingImageFolderManager(folder_name)
+            data_list = setting_image_data_manager.get_image_data
+            data_list = list(filter(lambda data:data["file_name"] == file_name,data_list))
+            if len(data_list) == 0:
+                raise Exception("表示名が存在しません")
+
+            base.append({"image_path":url_data,"thumbnail_path":thumbnail_url,"file_name":data_list[0]["displayed_name"],"tag":base_manager.get_Image_tags(file_name)})
 
         after:list[dict[str,Any]] = []
         for url_data in after_url_data:
             file_name = os.path.basename(url_data)
 
+            # サムネイルのURLを取得
             thumbnail_url_list = list(filter(lambda path:os.path.basename(path) == file_name,after_thumbnail_manager.get_all_url_paths()))
             if len(thumbnail_url_list) == 0:
                 raise Exception("通常の画像とサムネイル画像のセットが欠けています")
             thumbnail_url = thumbnail_url_list[0]
 
-            after.append({"image_path":url_data,"thumbnail_path":thumbnail_url,"file_name":file_name,"tag":after_manager.get_Image_tags(file_name=file_name)})
+            #表示名を取得する
+            setting_image_data_manager = SaveFilesSettingTrimmingFolderManager(folder_name)
+            data_list = setting_image_data_manager.get_image_data
+            data_list = list(filter(lambda data:data["file_name"] == file_name,data_list))
+            if len(data_list) == 0:
+                raise Exception("表示名が存在しません")
+
+            after.append({"image_path":url_data,"thumbnail_path":thumbnail_url,"file_name":data_list[0]["displayed_name"],"tag":after_manager.get_Image_tags(file_name=file_name)})
 
         return {"base":base,"after":after}
     

@@ -71,5 +71,6 @@ class Folder_Select:
     async def Set_Folder_Name(request:Request) -> None:
         data = await request.json()
         folder_name = data.get('folderName')
+        folder_id = data.get('folderId')
         manager = UserSettingManager()
-        manager.Select_Folder_Name = folder_name
+        manager.Select_Folder_Name = {"name":folder_name,"id":folder_id}

@@ -2,6 +2,8 @@ import json
 import os
 from typing import Any
 from modules.file_util import get_root_folder_path
+from modules.folder_path import get_savefiles
+import glob
 
 __all__ = ["UserSettingManager"]
 
@@ -24,12 +26,12 @@ class UserSettingManager:
         self.file_path = os.path.join(get_root_folder_path(),"user_setting.json")
 
     @property
-    def Sd_Model_Folder(self) -> str:
+    def Sd_Model_Folder(self) -> dict[str,str]:
         json_data = self.get_setting_file_json()
         return json_data["sd-model-folder"]
     
     @Sd_Model_Folder.setter
-    def Sd_Model_Folder(self,value:str) -> None:
+    def Sd_Model_Folder(self,value:dict[str,str]) -> None:
         json_data = self.get_setting_file_json()
         json_data["sd-model-folder"] = value
         self.write_setting_file_json(json_data=json_data)
@@ -100,14 +102,48 @@ class UserSettingManager:
                 file.write(json.dumps(json_data, indent=2))
         else:
             with open(self.file_path,"r") as file:
-                json_data = json.loads(file.read())
+                json_data = json.load(file)
+
+            # 1.0.2以前からアップデートした場合
+            if json_data.get("version") == None or json_data.get("version") < 103:
+                self.update_to_103()
             # 不足しているデータは不足分だけ追加する。
             # 連想配列Aに不足しているデータを連想配列Bから追加
             merge_dicts_recursive(json_data,self.init_data())
 
             with open(self.file_path,"w") as file:
                 file.write(json.dumps(json_data, indent=2))
+    # 1.0.3にアップデート
+    def update_to_103(self):
+        folder_list = glob.glob(os.path.join(get_savefiles(),"**"))
+        folder_list = list(filter(lambda path:os.path.isdir(path),folder_list))
 
+        for folder in folder_list:
+            folder_name = os.path.basename(folder)
+            setting_json = os.path.join(folder,"setting.json")
+
+            json_data = {}
+
+            with open(setting_json,"r") as f:
+                json_data = json.load(f)
+
+            # 各画像フォルダのsetting.jsonを書き換える
+            if json_data.get("folderData") == None:
+                json_data["folderData"] = {
+                    "id": folder_name,
+                    "name":folder_name
+                }
+
+            for base in json_data["Image_Data"]["base"]:
+                if base.get("displayed_name") == None:
+                    base["displayed_name"] = base["file_name"]
+
+            for after in json_data["Image_Data"]["after"]:
+                if after.get("displayed_name") == None:
+                    after["displayed_name"] = after["file_name"]
+
+            with open(setting_json,"w") as file:
+                file.write(json.dumps(json_data, indent=2))
 
     # 初期のデータ
     def init_data(self) -> dict[str,Any]:
@@ -115,7 +151,11 @@ class UserSettingManager:
             "sd-model-folder": os.path.join(get_root_folder_path(),"models","sd_models"),
             "kohyass-folder": os.path.join(get_root_folder_path(),"tools","sd-scripts"),
             "lora-folder": os.path.join(get_root_folder_path(),"outputs"),
-            "select-folder-name": "",
+            "select-folder-name": {
+                "name": "",
+                "id": ""
+            },
+            "version":103, #v1.0.2なら102
             "language": "en",
             "loraData": {
                 "MainSetting": {
