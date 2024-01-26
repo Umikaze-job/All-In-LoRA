@@ -20,6 +20,8 @@ def merge_dicts_recursive(dict_a:Any, dict_b:Any) -> Any:
                 # 辞書でない場合は上書きしない
                 print(f"Key: {key} already exists with a different value. Skipped.")
 
+    return dict_a
+
 class UserSettingManager:
     
     def __init__(self) -> None:
@@ -107,14 +109,18 @@ class UserSettingManager:
             # 1.0.2以前からアップデートした場合
             if json_data.get("version") == None or json_data.get("version") < 103:
                 self.update_to_103()
+                json_data["select-folder-name"] = {
+                    "name": "",
+                    "id": ""
+                },
             # 不足しているデータは不足分だけ追加する。
             # 連想配列Aに不足しているデータを連想配列Bから追加
-            merge_dicts_recursive(json_data,self.init_data())
+            json_data = merge_dicts_recursive(json_data,self.init_data())
 
             with open(self.file_path,"w") as file:
                 file.write(json.dumps(json_data, indent=2))
     # 1.0.3にアップデート
-    def update_to_103(self):
+    def update_to_103(self) -> None:
         folder_list = glob.glob(os.path.join(get_savefiles(),"**"))
         folder_list = list(filter(lambda path:os.path.isdir(path),folder_list))
 

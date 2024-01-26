@@ -14,16 +14,22 @@ class Make_Lora:
         data = await request.json()
         folder_name = data.get('folderName')
 
-        base = ImageFolderManager(folder_name=folder_name).get_all_url_paths()
-        after = CharacterTrimmingFolderManager(folder_name=folder_name).get_all_url_paths()
-        base_thumbnail = ThumbnailBaseFolderManager(folder_name=folder_name).get_all_url_paths()
-        after_thumbnail = ThumbnailAfterFolderManager(folder_name=folder_name).get_all_url_paths()
+        savefile_setting_base_manager = SaveFilesSettingImageFolderManager(folder_name)
+        savefile_setting_after_manager = SaveFilesSettingTrimmingFolderManager(folder_name)
+
+        base = list(map(lambda name:os.path.join(ImageFolderManager(folder_name=folder_name).url_path,name),savefile_setting_base_manager.file_name_list))
+        after = list(map(lambda name:os.path.join(CharacterTrimmingFolderManager(folder_name=folder_name).url_path,name),savefile_setting_after_manager.file_name_list))
+        base_thumbnail = list(map(lambda name:os.path.join(ThumbnailBaseFolderManager(folder_name=folder_name).url_path,name),savefile_setting_base_manager.file_name_list))
+        after_thumbnail = list(map(lambda name:os.path.join(ThumbnailAfterFolderManager(folder_name=folder_name).url_path,name),savefile_setting_after_manager.file_name_list))
+
+        base = list(filter(lambda path:savefile_setting_base_manager.get_tags_data(os.path.basename(path)) != [""],base))
+        after = list(filter(lambda path:savefile_setting_after_manager.get_tags_data(os.path.basename(path)) != [""],after))
+        base_thumbnail = list(filter(lambda path:savefile_setting_base_manager.get_tags_data(os.path.basename(path)) != [""],base_thumbnail))
+        after_thumbnail = list(filter(lambda path:savefile_setting_after_manager.get_tags_data(os.path.basename(path)) != [""],after_thumbnail))
 
         #displayed_nameのデータを加える
-        savefile_setting_base_manager = SaveFilesSettingImageFolderManager(folder_name)
         base_data = savefile_setting_base_manager.get_image_data_with_displayed_name(base)
 
-        savefile_setting_after_manager = SaveFilesSettingTrimmingFolderManager(folder_name)
         after_data = savefile_setting_after_manager.get_image_data_with_displayed_name(after)
 
         image_items:dict[str,list[Any]] = {"base":[],"after":[]}

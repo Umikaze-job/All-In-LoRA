@@ -29,14 +29,31 @@ class SaveFilesSettingImageDataManager(SaveFilesSettingJsonManager):
     def displayed_name_list(self) -> list[str]:
         return list(map(lambda data:data["displayed_name"],self.get_image_data))
     
+    # フォルダ名のリスト
+    @property
+    def file_name_list(self) -> list[str]:
+        return list(map(lambda data:data["file_name"],self.get_image_data))
+    
     # 入力した画像の名前をランダムな16桁の英数字に変更して、file_nameとdisplayed_nameを保存する(画像が新規で入力されたらこの処理をする)
-    def input_image_init(self,file_name:str,image_format:str):
+    def input_image_init(self,file_name:str,image_format:str) -> str:
         folder_id = self.get_random_id()
         self.Image_Data.append({"file_name":f"{folder_id}.{image_format}","displayed_name":os.path.splitext(file_name)[0]})
 
         self.__write_image_data()
 
         return folder_id
+    
+    # 指定した画像IDの表示名を変更する
+    def change_displayed_name(self,file_id:str,displayed_name:str) -> None:
+        # file_nameのデータが存在する場合
+        for data in self.Image_Data:
+            if data.get("file_name") == None or data.get("file_name") != file_id:
+                continue
+
+            data["displayed_name"] = displayed_name
+
+        # jsonに書き込む
+        self.__write_image_data()
     
     # タグを変更する
     def change_tags(self,file_name:str,tags:list[str]) -> None:
@@ -156,7 +173,7 @@ class SaveFilesSettingImageDataManager(SaveFilesSettingJsonManager):
         return list(filter(lambda data:data.get("method") == method,self.Image_Data))
 
     # 画像データのデータIDのリストからdisplayed_nameが含まれているデータリストを取得する
-    def get_image_data_with_displayed_name(self,data_list:list[str]):
+    def get_image_data_with_displayed_name(self,data_list:list[str]) -> list[dict[str,Any]]:
         result = []
         for data in data_list:
             res_data = list(filter(lambda d:d["file_name"] == os.path.basename(data),self.Image_Data))
