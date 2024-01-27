@@ -12,6 +12,10 @@ setting.jsonの中身
 "date":{
     "Folder creation date": <フォルダを初めて作成した日>
 },
+"folderData":{
+    "id":"<フォルダID>",
+    "name":"<フォルダ名>"
+}
 "Image_Data":{"base":[
     {"file_name":"<ファイル名>","tags":"<タグ>","caption":"<キャプション>","method":"<メソッド名>"}
 ],"after":[
@@ -83,19 +87,37 @@ setting.jsonの中身
 #endregion
 
 class SaveFilesSettingJsonManager:
-    def __init__(self,folder_name:str) -> None:
-        self.__folder_name = folder_name
+    def __init__(self,folder_id:str) -> None:
+        self.folder_id = folder_id
+
+    @property
+    def now_save_file(self):
+        return os.path.join(get_savefiles(),self.folder_id)
 
     # setting.jsonを読み込み
     def get_setting_file_json(self) -> Any:
-        file_path = os.path.join(get_savefiles(),self.__folder_name,"setting.json")
+        file_path = os.path.join(self.now_save_file,"setting.json")
         with open(file_path,"r") as f:
             return json.load(f)
 
     # setting.jsonに書き込み
     def write_setting_file_json(self,json_data:Any) -> None:
-        file_path = os.path.join(get_savefiles(),self.__folder_name,"setting.json")
+        file_path = os.path.join(self.now_save_file,"setting.json")
         with open(file_path,"w") as f:
             f.write(json.dumps(json_data, indent=2))
+
+    # こっちを使いたい
+    @property
+    def setting_file_json(self) -> dict[str,Any]:
+        file_path = os.path.join(self.now_save_file,"setting.json")
+        with open(file_path,"r") as f:
+            return json.load(f)
+        
+    @setting_file_json.setter
+    def setting_file_json(self,json_data:Any) -> None:
+        file_path = os.path.join(self.now_save_file,"setting.json")
+        with open(file_path,"w") as f:
+            f.write(json.dumps(json_data, indent=2))
+
         
 

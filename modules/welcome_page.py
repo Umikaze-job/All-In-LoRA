@@ -7,6 +7,8 @@ from modules.class_definition.folder_manager import SaveFileManager
 from modules.class_definition.folder_manager import ShellCommandManager
 import torch
 from torch.backends import cudnn
+import platform
+import subprocess
 
 class Welcome_Page:
 
@@ -121,6 +123,31 @@ class Welcome_Page:
             return {"result":"ok"}
         except Exception as e:
             return {"error":traceback.format_exc()}
+    
+    # エクスプローラーを開く
+    @staticmethod
+    async def Open_Explorer(request:Request) -> dict[str,Any]:
+        try:
+            data = await request.json()
+            folder_name = data.get("folder_name")
+            print(folder_name)
+            manager = UserSettingManager()
+            folder_path = manager.get_folder_path(folder_name)
+
+            current_os = platform.system()
+
+            # OSごとに処理を分岐
+            if current_os == 'Windows':
+                subprocess.Popen(['explorer', folder_path], shell=True)
+            elif current_os == 'Linux':
+                subprocess.Popen(['xdg-open', folder_path])
+            elif current_os == 'Darwin':  # macOS
+                subprocess.Popen(['open', folder_path])
+            else:
+                print(f"Unsupported operating system: {current_os}")
+            return {"result":"ok"}
+        except Exception as e:
+            return {"error":traceback.format_exc()}
         
     # 初期化設定
     @staticmethod
@@ -136,11 +163,6 @@ class Welcome_Page:
             ]
             isfolder = all(list(map(lambda path:os.path.isdir(path),path_set)))
 
-            # 選択しているフォルダ名の取得
-            folderName = manager.Select_Folder_Name
-            if (SaveFileManager.any_savefiles(folder_name=folderName) == False):
-                folderName = ""
-
             # 言語の取得
             language = manager.User_Language
 
@@ -153,6 +175,6 @@ class Welcome_Page:
             manager.Init_LoraData = lora_data
 
             # フォルダ名の取得
-            return {"isfolder":isfolder,"folderName":manager.Select_Folder_Name,"language":language}
+            return {"isfolder":isfolder,"folderName":manager.Select_Folder_Name["name"],"folderId":manager.Select_Folder_Name["id"],"language":language}
         except Exception as e:
             return {"error":traceback.format_exc()}

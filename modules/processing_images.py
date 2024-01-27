@@ -4,6 +4,7 @@ import os
 import io
 
 from modules.gpu_modules.edit_images import FaceTrimmingManager,BodyTrimmingManager,CharacterTrimmingManager
+from modules.class_definition.json_manager import SaveFilesSettingImageFolderManager,SaveFilesSettingTrimmingFolderManager
 from modules.folder_path import get_savefiles,get_localhost_name,get_root_folder_path
 from PIL import Image
 import glob
@@ -37,14 +38,16 @@ class Processing_Images:
     async def Input_Images(request:Request) -> dict[str,Any]:
         try:
             data = await request.json()
-            folder_name = data.get('folderName')
-            image_manager = ImageFolderManager(folder_name)
-            base_manager = ThumbnailBaseFolderManager(folder_name)
+            folder_id = data.get('folderName')
+            image_manager = ImageFolderManager(folder_id)
+            base_manager = ThumbnailBaseFolderManager(folder_id)
 
-            data_paths = image_manager.get_all_url_paths()
-            thumbnail_path = base_manager.get_all_url_paths()
+            setting_image_data_manager = SaveFilesSettingImageFolderManager(folder_id)
 
-            return {"data_paths": data_paths,"thumbnail_path":thumbnail_path}
+            data_paths = list(map(lambda name:os.path.join(image_manager.url_path,name),setting_image_data_manager.file_name_list))
+            thumbnail_path = list(map(lambda name:os.path.join(base_manager.url_path,name),setting_image_data_manager.file_name_list))
+
+            return {"data_paths": data_paths,"thumbnail_path":thumbnail_path,"displayed_name":setting_image_data_manager.displayed_name_list}
         except Exception as e:
             return {"error":traceback.format_exc()}
         
@@ -63,8 +66,13 @@ class Processing_Images:
             img_bin = io.BytesIO(content)
             image = Image.open(img_bin).convert("RGBA")
 
-            await image_manager.Input_Image(image,file_name)
-            await base_manager.Input_Image(image,file_name)
+            image_format = "webp"
+
+            setting_manager = SaveFilesSettingImageFolderManager(folder_name)
+            folder_id = setting_manager.input_image_init(file_name,image_format)
+
+            await image_manager.Input_Image(image,folder_id,image_format)
+            await base_manager.Input_Image(image,folder_id,image_format)
 
             return {"message": "OK"}
         except Exception as e:
@@ -83,6 +91,10 @@ class Processing_Images:
 
             image_manager.delete_file(filename)
             base_manager.delete_file(filename)
+
+            setting_manager = SaveFilesSettingImageFolderManager(folder_name)
+            setting_manager.delete_image_data(filename)
+
             return {"message":f"File Deleted"}
         except Exception as e:
             return {"error":traceback.format_exc()}
@@ -96,11 +108,13 @@ class Processing_Images:
 
             character_trimming_manager = CharacterTrimmingFolderManager(folder_name)
             after_manager = ThumbnailAfterFolderManager(folder_name)
+            
+            setting_image_data_manager = SaveFilesSettingTrimmingFolderManager(folder_name)
 
-            image_paths = character_trimming_manager.get_all_url_paths()
-            thumbnail_paths  = after_manager.get_all_url_paths()
+            image_paths = list(map(lambda name:os.path.join(character_trimming_manager.url_path,name),setting_image_data_manager.file_name_list))
+            thumbnail_paths  = list(map(lambda name:os.path.join(after_manager.url_path,name),setting_image_data_manager.file_name_list))
 
-            return {"data_paths": image_paths,"thumbnail_path":thumbnail_paths}
+            return {"data_paths": image_paths,"thumbnail_path":thumbnail_paths,"displayed_name":setting_image_data_manager.displayed_name_list}
         except Exception as e:
             return {"error":traceback.format_exc()}
     
@@ -117,6 +131,9 @@ class Processing_Images:
 
             character_trimming_manager.delete_file(file_name)
             after_manager.delete_file(file_name)
+
+            setting_manager = SaveFilesSettingTrimmingFolderManager(folder_name)
+            setting_manager.delete_image_data(file_name)
 
             return {"message":"OK!!"}
         except FileNotFoundError:
@@ -154,6 +171,7 @@ class Processing_Images:
             setting = data.get("setting")
             type_name = data.get("type")
             is_resize = data.get("isResize")
+            displayed_name = data.get("displayedName")
 
             base_image_path = ImageFolderManager(folder_name=folder_name).get_selected_image_path(name=file_name)
 
@@ -193,11 +211,18 @@ class Processing_Images:
             # リサイズをする必要がないときは
             if is_resize == False:
                 for index,im in enumerate(result_imgset):
-                    im.save(after_image_manager.additional_named_path(file_path=after_image_path,addName=str(index).rjust(3, '0')))
+                    after_file_path = after_image_manager.additional_named_path(file_path=after_image_path,addName=str(index).rjust(3, '0'))
+
+                    # 画像データをjsonに保存する
+                    image_format = "webp"
+                    setting_manager = SaveFilesSettingTrimmingFolderManager(folder_name)
+                    folder_id = setting_manager.input_image_init(file_name=os.path.basename(after_file_path),image_format=image_format)
+                    setting_manager.change_displayed_name(file_id=f"{folder_id}.{image_format}",displayed_name=f"{displayed_name}_{str(index).rjust(3, '0')}")
+                    im.save(os.path.join(after_image_manager.folder_path,f"{folder_id}.{image_format}"))
 
                     im.thumbnail((600,400))
 
-                    im.save(after_thumbnail_manager.additional_named_path(file_path=after_thumbnail_path,addName=str(index).rjust(3, '0')),quality=50)
+                    im.save(os.path.join(after_thumbnail_manager.folder_path,f"{folder_id}.{image_format}"),quality=50)
 
                 return {"message":"OK!!!"}
             
@@ -220,9 +245,17 @@ class Processing_Images:
                 
                 #倍率が1以下なら普通に保存する
                 if rate <= 1:
-                    im.save(after_image_manager.additional_named_path(file_path=after_image_path,addName=str(index).rjust(3, '0')))
+                    after_file_path = after_image_manager.additional_named_path(file_path=after_image_path,addName=str(index).rjust(3, '0'))
+
+                    # 画像データをjsonに保存する
+                    image_format = "webp"
+                    setting_manager = SaveFilesSettingTrimmingFolderManager(folder_name)
+                    folder_id = setting_manager.input_image_init(file_name=os.path.basename(after_file_path),image_format=image_format)
+                    setting_manager.change_displayed_name(file_id=f"{folder_id}.{image_format}",displayed_name=f"{displayed_name}_{str(index).rjust(3, '0')}")
+
+                    im.save(os.path.join(after_image_manager.folder_path,f"{folder_id}.{image_format}"))
                     im.thumbnail((600,400))
-                    im.save(after_thumbnail_manager.additional_named_path(file_path=after_thumbnail_path,addName=str(index).rjust(3, '0')),quality=50)
+                    im.save(os.path.join(after_thumbnail_manager.folder_path,f"{folder_id}.{image_format}"),quality=50)
                     continue
 
                 temp_file_name = after_image_manager.additional_named_path_for_temp(file_path=after_image_path,addName=str(index).rjust(3, '0'))
@@ -240,12 +273,17 @@ class Processing_Images:
                 # out_resize_path = list(filter(lambda path:re.match(r'.*_out\.(webp|png)$', path) != None,out_resize_path))
                 for out_re in out_resize_images:
                     resize_image = Image.open(out_re)
-                    resize_file_name = f"{os.path.splitext(os.path.basename(out_re))[0]}.webp"
-                    resize_image.save(os.path.join(get_savefiles(),folder_name,"character_trimming_folder",resize_file_name))
+                    # 画像データをjsonに保存する
+                    image_format = "webp"
+                    resize_file_name = f"{os.path.splitext(os.path.basename(out_re))[0]}.{image_format}"
+                    setting_manager = SaveFilesSettingTrimmingFolderManager(folder_name)
+                    folder_id = setting_manager.input_image_init(file_name=resize_file_name,image_format=image_format)
+                    setting_manager.change_displayed_name(file_id=f"{folder_id}.{image_format}",displayed_name=f"{displayed_name}_{str(index).rjust(3, '0')}")
+                    resize_image.save(os.path.join(after_image_manager.folder_path,f"{folder_id}.{image_format}"))
                     
                     resize_image.thumbnail((600,400))
 
-                    resize_image.save(os.path.join(get_savefiles(),folder_name,"thumbnail_folder","after",resize_file_name),quality=50)
+                    resize_image.save(os.path.join(after_thumbnail_manager.folder_path,f"{folder_id}.{image_format}"),quality=50)
 
                     os.remove(out_re)
 

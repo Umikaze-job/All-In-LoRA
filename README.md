@@ -32,7 +32,14 @@ Give unrestricted script access to powershell so venv can work:
 - Type `Set-ExecutionPolicy Unrestricted` and answer A
 - Close admin powershell window
 
-#### Setup
+#### Automatic Setup on Windows
+
+1. Install `CUDA 11.8` + `CUDNN`.
+2. Run `install.bat`
+3. Run `start.bat`
+4. Open `http://127.0.0.1:8000`
+
+#### Manual Setup
 
 1. Install `CUDA 11.8` + `CUDNN`.
 2. Enter the following command to create a python virtual environment:

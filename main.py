@@ -77,6 +77,10 @@ async def Welcome_Page_Setting_Mixed_Precision(request:Request) -> Any:
 async def Welcome_Page_Check_Cuda_Cudnn() -> Any:
     return await Welcome_Page.Check_Cuda_Cudnn()
 
+@app.post("/api/welcome-page/open-explorer")
+async def Welcome_Page_Open_Explorer(request:Request) -> Any:
+    return await Welcome_Page.Open_Explorer(request=request)
+
 #endregion
 # region folder-select関係
 @app.post("/api/folder-select/get-folders")
