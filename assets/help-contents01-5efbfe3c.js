@@ -1,2 +1,0 @@
-import{d as l,_ as c,o as e,c as n,i as o,F as r,f as u,t as p,h as i}from"./index-32431f85.js";const d=l({props:{contentsCount:Number,categoryName:String,contentsSub:{type:String,default:""}}}),m=i("br",null,null,-1);function f(t,$,g,S,_,h){return e(!0),n(r,null,o(new Array(t.contentsCount),(y,s)=>(e(),n("p",null,[(e(!0),n(r,null,o(t.$t(`helpWindow.${t.categoryName}.contents${t.contentsSub}${s.toString().padStart(2,"0")}`).split(`
-`),a=>(e(),n(r,null,[u(p(a),1),m],64))),256))]))),256)}const b=c(d,[["render",f]]);export{b as h};

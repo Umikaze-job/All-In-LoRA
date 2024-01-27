@@ -28,7 +28,7 @@ class UserSettingManager:
         self.file_path = os.path.join(get_root_folder_path(),"user_setting.json")
 
     @property
-    def Sd_Model_Folder(self) -> dict[str,str]:
+    def Sd_Model_Folder(self) -> str:
         json_data = self.get_setting_file_json()
         return json_data["sd-model-folder"]
     
@@ -61,7 +61,7 @@ class UserSettingManager:
         self.write_setting_file_json(json_data=json_data)
 
     @property
-    def Select_Folder_Name(self) -> str:
+    def Select_Folder_Name(self) -> dict[str,str]:
         json_data = self.get_setting_file_json()
         return json_data["select-folder-name"]
     
@@ -93,6 +93,17 @@ class UserSettingManager:
         json_data["loraData"] = value
         self.write_setting_file_json(json_data=json_data)
 
+    #フロントエンドで使用しているウィンドウ名に応じて、フォルダパスを返す
+    def get_folder_path(self,window_name:str) -> str:
+        if window_name == "welcomePage.sdmodel.title":
+            return self.Sd_Model_Folder
+        elif window_name == "welcomePage.sdscripts.title":
+            return self.Kohyass_Folder
+        elif window_name == "welcomePage.lorafolder.title":
+            return self.Lora_Folder
+        else:
+            return ""
+
     # jsonファイルのリフレッシュをする
     # ファイルがなかった時は作成して、項目が足りない時は追加する
     def setting_file_refresh(self) -> None:
@@ -107,7 +118,7 @@ class UserSettingManager:
                 json_data = json.load(file)
 
             # 1.0.2以前からアップデートした場合
-            if json_data.get("version") == None or json_data.get("version") < 103:
+            if json_data.get("version") == None or int(json_data.get("version")) < 103:
                 self.update_to_103()
                 json_data["select-folder-name"] = {
                     "name": "",
@@ -172,7 +183,7 @@ class UserSettingManager:
                     "useModel": "",
                     "loraType": "LoCon",
                     "optimizer": "DAdaptAdam",
-                    "mixed_precision": ""
+                    "mixed_precision": "fp16"
                 },
                 "learningSetting": {
                     "networkDim": 64,
