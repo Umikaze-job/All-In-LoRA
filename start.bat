@@ -1,2 +1,2 @@
-.\venv\Scripts\activate
-python main.py
+call .\venv\Scripts\activate
+call python main.py
